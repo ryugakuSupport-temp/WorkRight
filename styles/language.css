@@ -1,0 +1,212 @@
+/* 言語選択ボタンとモーダル */
+.management-tab-list {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+}
+
+.management-tab,
+.language-button {
+  white-space: nowrap;
+}
+
+.language-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 46px;
+  margin-left: auto;
+  padding: 10px 16px;
+  border: 1px solid #cbd8d2;
+  border-radius: 11px;
+  color: var(--green-deep);
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.language-button:hover,
+.language-button:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.language-button:focus-visible,
+.language-close-button:focus-visible,
+.language-option:focus-visible {
+  outline: 3px solid rgba(23, 75, 99, 0.24);
+  outline-offset: 2px;
+}
+
+.language-button-icon {
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+.language-modal[hidden] {
+  display: none;
+}
+
+.language-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.language-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 48, 46, 0.58);
+  cursor: pointer;
+}
+
+.language-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border: 1px solid rgba(23, 75, 99, 0.1);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(23, 75, 99, 0.22);
+}
+
+.language-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 26px 18px;
+}
+
+.language-dialog-header h2,
+.language-dialog > p {
+  margin: 0;
+}
+
+.language-dialog-header h2 {
+  font-size: 1.35rem;
+}
+
+.language-close-button {
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  background: #fff;
+  font-size: 1.45rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.language-dialog > p {
+  padding: 0 26px 20px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.language-list {
+  display: grid;
+  gap: 9px;
+  padding: 20px 26px 26px;
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  min-height: 58px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.language-option:hover,
+.language-option:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.language-option.selected {
+  border-color: var(--green);
+  background: var(--green-soft);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+
+.language-option-names {
+  display: grid;
+  gap: 2px;
+}
+
+.language-option-names strong {
+  font-size: 0.93rem;
+}
+
+.language-option-names > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.language-option-status {
+  color: var(--green-deep);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .management-tabs,
+  .management-tab-list {
+    gap: 4px;
+  }
+
+  .management-tab-list {
+    flex: 1;
+  }
+
+  .management-tab {
+    min-width: 0;
+    padding-inline: 6px;
+    font-size: 0.78rem;
+  }
+
+  .language-button {
+    flex: 0 0 auto;
+    gap: 4px;
+    padding-inline: 9px;
+    font-size: 0.72rem;
+  }
+
+  .language-modal {
+    padding: 10px;
+  }
+
+  .language-dialog {
+    max-height: calc(100vh - 20px);
+    border-radius: 20px;
+  }
+
+  .language-dialog-header,
+  .language-list {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .language-dialog > p {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+}

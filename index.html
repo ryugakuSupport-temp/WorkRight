@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+      name="description"
+      data-i18n-content="meta.description"
+      content="留学生のアルバイト管理を支援する月間シフトカレンダー"
+    >
+    <title data-i18n="app.title">WorkRight（ワークライト） | 月間カレンダー</title>
+    <link rel="stylesheet" href="./styles/calendar.css">
+    <link rel="stylesheet" href="./styles/long-breaks.css">
+    <link rel="stylesheet" href="./styles/pay.css">
+    <link rel="stylesheet" href="./styles/warnings.css">
+    <link rel="stylesheet" href="./styles/language.css">
+    <link rel="stylesheet" href="./styles/storage.css">
+    <link rel="stylesheet" href="./styles/information-pages.css">
+    <script src="./lang/languages.js" defer></script>
+    <script src="./lang/ja.js" defer></script>
+    <script src="./lang/en.js" defer></script>
+    <script src="./lang/bn.js" defer></script>
+    <script src="./lang/ko.js" defer></script>
+    <script src="./lang/my.js" defer></script>
+    <script src="./lang/ne.js" defer></script>
+    <script src="./lang/si.js" defer></script>
+    <script src="./lang/vi.js" defer></script>
+    <script src="./scripts/storage.js" defer></script>
+    <script src="./lang/language.js" defer></script>
+    <script src="./scripts/calendar.js" defer></script>
+  </head>
+  <body>
+    <main class="app-background">
+      <section
+        class="calendar-app"
+        aria-label="WorkRight（ワークライト）月間カレンダー"
+        data-i18n-aria-label="app.ariaLabel"
+      >
+        <header class="app-header">
+          <img
+            class="brand-mark"
+            src="./assets/workright-mark.svg"
+            alt=""
+            aria-hidden="true"
+          >
+          <div>
+            <p class="eyebrow">SHIFT MANAGEMENT</p>
+            <p class="app-name" data-i18n="app.name">WorkRight（ワークライト）</p>
+          </div>
+          <nav class="information-links" aria-label="ご案内">
+            <a class="information-link" href="./pages/school-guide.html">
+              学校関係者のみなさまへ
+            </a>
+            <a class="information-link" href="./pages/legal-references.html">
+              参照元
+            </a>
+          </nav>
+        </header>
+
+        <nav class="management-tabs" aria-label="管理画面" data-i18n-aria-label="nav.ariaLabel">
+          <div
+            class="management-tab-list"
+            role="tablist"
+            aria-label="管理画面"
+            data-i18n-aria-label="nav.ariaLabel"
+          >
+          <button
+            id="shift-management-tab"
+            class="management-tab active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="shift-management-panel"
+          >
+            <span data-i18n="nav.shift">シフト管理</span>
+          </button>
+          <button
+            id="long-break-management-tab"
+            class="management-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="long-break-management-panel"
+          >
+            <span data-i18n="nav.longBreak">長期休み管理</span>
+          </button>
+          </div>
+          <button
+            id="language-button"
+            class="language-button"
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="language-modal"
+            aria-label="言語選択を開く"
+            data-i18n-aria-label="language.openAria"
+          >
+            <span class="language-button-icon" aria-hidden="true">🌐</span>
+            <span>Language</span>
+          </button>
+        </nav>
+
+        <div id="language-modal" class="language-modal" hidden>
+          <div
+            id="language-modal-backdrop"
+            class="language-modal-backdrop"
+            aria-hidden="true"
+          ></div>
+          <section
+            class="language-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="language-modal-heading"
+            aria-describedby="language-modal-description"
+          >
+            <header class="language-dialog-header">
+              <div>
+                <p class="section-label">Language</p>
+                <h2 id="language-modal-heading" data-i18n="language.modalTitle" tabindex="-1">
+                  言語を選択
+                </h2>
+              </div>
+              <button
+                id="close-language-modal"
+                class="language-close-button"
+                type="button"
+                aria-label="言語選択を閉じる"
+                data-i18n-aria-label="language.closeAria"
+              >
+                ×
+              </button>
+            </header>
+            <p id="language-modal-description" data-i18n="language.modalDescription">
+              画面に表示する言語を選択してください。
+            </p>
+            <div
+              id="language-list"
+              class="language-list"
+              role="listbox"
+              aria-label="選択可能な言語"
+              data-i18n-aria-label="language.listAria"
+            ></div>
+          </section>
+        </div>
+
+        <section
+          id="shift-management-panel"
+          class="management-panel"
+          role="tabpanel"
+          aria-labelledby="shift-management-tab"
+        >
+        <div class="calendar-card">
+          <div class="calendar-toolbar">
+            <div>
+              <p class="section-label" data-i18n="calendar.section">月間カレンダー</p>
+              <h1 id="calendar-month-heading" aria-live="polite"></h1>
+              <p class="monthly-estimated-pay">
+                <span data-i18n="calendar.monthlyPay">今月の概算給料</span>
+                <strong id="monthly-estimated-pay" aria-live="polite">0円</strong>
+              </p>
+              <section
+                id="monthly-legal-warning"
+                class="monthly-legal-warning"
+                role="alert"
+                aria-labelledby="monthly-legal-warning-heading"
+                hidden
+              >
+                <span class="monthly-legal-warning-mark" aria-hidden="true">!</span>
+                <div>
+                  <h2 id="monthly-legal-warning-heading" data-i18n="calendar.legalHeading">
+                    法的問題が発生する警告があります
+                  </h2>
+                  <p id="monthly-legal-warning-message"></p>
+                </div>
+              </section>
+            </div>
+
+            <div
+              class="calendar-actions"
+              aria-label="カレンダーの月移動"
+              data-i18n-aria-label="calendar.actionsAria"
+            >
+              <button
+                id="previous-month"
+                class="icon-button"
+                type="button"
+                aria-label="前月を表示"
+                data-i18n-aria-label="calendar.previous"
+              >
+                <span aria-hidden="true">‹</span>
+              </button>
+              <button id="today" class="today-button" type="button" data-i18n="calendar.today">今日</button>
+              <button
+                id="next-month"
+                class="icon-button"
+                type="button"
+                aria-label="翌月を表示"
+                data-i18n-aria-label="calendar.next"
+              >
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="calendar-legend"
+            aria-label="カレンダー表示の説明"
+            data-i18n-aria-label="calendar.legendAria"
+          >
+            <span class="long-break-legend-line" aria-hidden="true"></span>
+            <span data-i18n="calendar.longBreak">長期休み</span>
+          </div>
+
+          <div class="weekday-row" role="row" aria-label="曜日" data-i18n-aria-label="calendar.weekdaysAria">
+            <div class="weekday sunday" role="columnheader" data-i18n="weekday.sun">日</div>
+            <div class="weekday" role="columnheader" data-i18n="weekday.mon">月</div>
+            <div class="weekday" role="columnheader" data-i18n="weekday.tue">火</div>
+            <div class="weekday" role="columnheader" data-i18n="weekday.wed">水</div>
+            <div class="weekday" role="columnheader" data-i18n="weekday.thu">木</div>
+            <div class="weekday" role="columnheader" data-i18n="weekday.fri">金</div>
+            <div class="weekday saturday" role="columnheader" data-i18n="weekday.sat">土</div>
+          </div>
+
+          <div
+            id="calendar-grid"
+            class="calendar-grid"
+            role="grid"
+            aria-labelledby="calendar-month-heading"
+          ></div>
+        </div>
+
+        <div id="shift-modal" class="shift-modal" hidden>
+          <div
+            id="shift-modal-backdrop"
+            class="shift-modal-backdrop"
+            aria-hidden="true"
+          ></div>
+          <section
+            id="day-panel"
+            class="day-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="selected-date-heading"
+          >
+          <header class="day-panel-header">
+            <div class="day-panel-date">
+              <p class="section-label" data-i18n="day.selected">選択した日</p>
+              <h2 id="selected-date-heading" tabindex="-1"></h2>
+              <p class="daily-estimated-pay">
+                <span data-i18n="day.dailyPay">この日の概算給料</span>
+                <strong id="daily-estimated-pay" aria-live="polite">0円</strong>
+              </p>
+              <dl
+                class="selected-period-summary"
+                aria-label="この日の勤務時間集計"
+                data-i18n-aria-label="day.summaryAria"
+              >
+                <div>
+                  <dt data-i18n="summary.period">集計期間</dt>
+                  <dd id="selected-period-range"></dd>
+                </div>
+                <div>
+                  <dt data-i18n="summary.registeredWork">登録済み勤務時間</dt>
+                  <dd id="selected-period-worked"></dd>
+                </div>
+                <div>
+                  <dt data-i18n="summary.remaining">今後勤務できる時間</dt>
+                  <dd id="selected-period-remaining"></dd>
+                </div>
+              </dl>
+            </div>
+            <p id="shift-count" class="shift-count-summary"></p>
+          </header>
+
+          <section
+            id="weekly-warning"
+            class="weekly-warning"
+            aria-labelledby="weekly-warning-heading"
+            hidden
+          >
+            <span class="weekly-warning-mark" aria-hidden="true">!</span>
+            <div>
+              <h3 id="weekly-warning-heading" data-i18n="warning.normalHeading">
+                直前7日間の勤務時間が28時間を超えています
+              </h3>
+              <dl class="weekly-warning-details">
+                <div>
+                  <dt data-i18n="summary.period">集計期間</dt>
+                  <dd id="weekly-warning-period"></dd>
+                </div>
+                <div>
+                  <dt data-i18n="warning.total">合計勤務時間</dt>
+                  <dd id="weekly-warning-total"></dd>
+                </div>
+                <div>
+                  <dt data-i18n="warning.limit">上限</dt>
+                  <dd id="weekly-warning-limit">28時間</dd>
+                </div>
+                <div>
+                  <dt data-i18n="warning.excess">超過時間</dt>
+                  <dd id="weekly-warning-excess"></dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+
+          <section
+            id="daily-overlap-warning"
+            class="daily-overlap-warning"
+            aria-labelledby="daily-overlap-warning-heading"
+            hidden
+          >
+            <span class="daily-overlap-warning-mark" aria-hidden="true">!</span>
+            <h3 id="daily-overlap-warning-heading" data-i18n="warning.overlapHeading">
+              重複したシフトがあります。
+            </h3>
+          </section>
+
+          <div class="day-panel-content">
+            <form id="shift-form" class="shift-form">
+              <h3 id="shift-form-heading" data-i18n="shift.form.addTitle">シフトを登録</h3>
+
+              <fieldset id="shift-fields">
+                <div class="form-grid">
+                  <label class="form-field form-field-wide">
+                    <span><span data-i18n="shift.form.jobName">バイト名</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                    <input
+                      id="job-name"
+                      name="jobName"
+                      type="text"
+                      autocomplete="off"
+                      required
+                    >
+                  </label>
+
+                  <label class="form-field">
+                    <span><span data-i18n="shift.form.start">開始時刻</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                    <input name="startTime" type="time" step="60" required>
+                  </label>
+
+                  <label class="form-field">
+                    <span><span data-i18n="shift.form.end">終了時刻</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                    <input name="endTime" type="time" step="60" required>
+                  </label>
+
+                  <label class="form-field">
+                    <span data-i18n="shift.form.breakStart">休憩開始時刻</span>
+                    <input
+                      id="break-start-time"
+                      name="breakStartTime"
+                      type="time"
+                      step="60"
+                    >
+                  </label>
+
+                  <label class="form-field">
+                    <span data-i18n="shift.form.breakEnd">休憩終了時刻</span>
+                    <input
+                      id="break-end-time"
+                      name="breakEndTime"
+                      type="time"
+                      step="60"
+                    >
+                  </label>
+
+                  <p class="form-hint form-field-wide" data-i18n="shift.form.breakHint">
+                    休憩なしの場合は、休憩開始時刻と休憩終了時刻を両方空欄にしてください。
+                  </p>
+
+                  <label class="form-field">
+                    <span><span data-i18n="shift.form.hourlyWage">時給（円）</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                    <input
+                      name="hourlyWage"
+                      type="number"
+                      min="1"
+                      step="1"
+                      inputmode="numeric"
+                      required
+                    >
+                    <small class="wage-note" data-i18n="shift.form.wageHint">通常の時給を入力してください</small>
+                  </label>
+
+                  <label class="form-field form-field-wide">
+                    <span data-i18n="common.memo">その他メモ</span>
+                    <textarea name="memo" rows="3"></textarea>
+                  </label>
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    id="shift-submit-button"
+                    class="save-shift-button"
+                    type="submit"
+                    data-i18n="shift.form.addTitle"
+                  >
+                    シフトを登録
+                  </button>
+                  <button
+                    id="cancel-edit"
+                    class="cancel-edit-button"
+                    type="button"
+                    hidden
+                    data-i18n="shift.form.cancelEdit"
+                  >
+                    編集をキャンセル
+                  </button>
+                </div>
+              </fieldset>
+
+              <p
+                id="form-message"
+                class="form-message"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></p>
+            </form>
+
+            <section class="shift-list-section" aria-labelledby="shift-list-heading">
+              <div class="shift-list-header">
+                <h3 id="shift-list-heading" data-i18n="shift.listHeading">登録済みシフト</h3>
+                <span data-i18n="shift.sort">開始時刻順</span>
+              </div>
+              <div id="shift-list" class="shift-list"></div>
+            </section>
+          </div>
+          </section>
+        </div>
+
+        <footer class="app-footer">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span data-i18n="shift.footer">日付を選択してシフトを登録してください</span>
+        </footer>
+        </section>
+
+        <section
+          id="long-break-management-panel"
+          class="management-panel long-break-management-panel"
+          role="tabpanel"
+          aria-labelledby="long-break-management-tab"
+          hidden
+        >
+          <div class="long-break-card">
+            <header class="long-break-card-header">
+              <div>
+                <p class="section-label" data-i18n="longBreak.section">長期休み管理</p>
+                <h1 data-i18n="longBreak.listHeading">登録済みの長期休み</h1>
+                <p data-i18n="longBreak.sort">開始日が新しい順に表示します。</p>
+              </div>
+              <button id="add-long-break" class="add-long-break-button" type="button" data-i18n="longBreak.add">
+                長期休み追加
+              </button>
+            </header>
+            <div id="long-break-list" class="long-break-list"></div>
+          </div>
+
+          <footer class="app-footer">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span data-i18n="longBreak.footer">登録内容はシフト管理のカレンダーへ反映されます</span>
+          </footer>
+        </section>
+
+        <div id="long-break-modal" class="long-break-modal" hidden>
+          <div
+            id="long-break-modal-backdrop"
+            class="long-break-modal-backdrop"
+            aria-hidden="true"
+          ></div>
+          <section
+            class="long-break-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="long-break-form-heading"
+          >
+            <header class="long-break-dialog-header">
+              <div>
+                <p class="section-label" data-i18n="longBreak.section">長期休み管理</p>
+                <h2 id="long-break-form-heading" data-i18n="longBreak.modalAdd" tabindex="-1">長期休みを追加</h2>
+              </div>
+              <button
+                id="close-long-break-modal"
+                class="long-break-close-button"
+                type="button"
+                aria-label="長期休み入力画面を閉じる"
+                data-i18n-aria-label="longBreak.closeAria"
+              >
+                ×
+              </button>
+            </header>
+
+            <form id="long-break-form" class="long-break-form">
+              <label class="form-field">
+                <span><span data-i18n="longBreak.name">長期休み名</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                <input
+                  id="long-break-name"
+                  name="name"
+                  type="text"
+                  autocomplete="off"
+                  required
+                >
+              </label>
+              <div class="long-break-date-fields">
+                <label class="form-field">
+                  <span><span data-i18n="longBreak.startDate">長期休み開始年月日</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                  <input id="long-break-start-date" name="startDate" type="date" required>
+                </label>
+                <label class="form-field">
+                  <span><span data-i18n="longBreak.endDate">長期休み終了年月日</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                  <input id="long-break-end-date" name="endDate" type="date" required>
+                </label>
+              </div>
+              <label class="form-field">
+                <span data-i18n="common.memo">その他メモ</span>
+                <textarea name="memo" rows="4"></textarea>
+              </label>
+
+              <p
+                id="long-break-form-message"
+                class="long-break-form-message"
+                role="alert"
+                hidden
+              ></p>
+
+              <div class="long-break-form-actions">
+                <button id="save-long-break" class="save-long-break-button" type="submit" data-i18n="longBreak.register">
+                  長期休みを登録
+                </button>
+                <button id="cancel-long-break" class="cancel-long-break-button" type="button" data-i18n="common.cancel">
+                  キャンセル
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <div id="storage-recovery-modal" class="storage-recovery-modal" hidden>
+          <div class="storage-recovery-backdrop" aria-hidden="true"></div>
+          <section
+            class="storage-recovery-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="storage-recovery-heading"
+            aria-describedby="storage-recovery-description storage-recovery-warning"
+          >
+            <h2
+              id="storage-recovery-heading"
+              data-i18n="storage.recovery.title"
+              tabindex="-1"
+            >
+              端末内データを読み込めません
+            </h2>
+            <p id="storage-recovery-description" data-i18n="storage.recovery.description">
+              保存済みデータの読み込みに失敗しました。初期化すると、端末内のシフト、長期休み、設定がすべて削除されます。
+            </p>
+            <p
+              id="storage-recovery-warning"
+              class="storage-recovery-warning"
+              data-i18n="storage.recovery.warning"
+            >
+              削除したデータは元に戻せません。内容を確認してから初期化してください。
+            </p>
+            <p
+              id="storage-recovery-error"
+              class="storage-recovery-error"
+              role="alert"
+              hidden
+            ></p>
+            <div class="storage-recovery-actions">
+              <button
+                id="reset-storage"
+                class="reset-storage-button"
+                type="button"
+                data-i18n="storage.recovery.reset"
+              >
+                保存データを削除して初期化
+              </button>
+              <button
+                id="reload-storage"
+                class="reload-storage-button"
+                type="button"
+                data-i18n="storage.recovery.reload"
+              >
+                再読み込み
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <noscript>
+          <p class="noscript-message">
+            カレンダーを表示するには、ブラウザのJavaScriptを有効にしてください。
+          </p>
+        </noscript>
+      </section>
+    </main>
+  </body>
+</html>

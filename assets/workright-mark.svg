@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">WorkRight</title>
+  <rect width="128" height="128" rx="24" fill="#93d9d7"/>
+  <text x="9" y="73" fill="#174b63" font-family="Arial, sans-serif" font-size="31" font-weight="700">W</text>
+  <text x="96" y="73" fill="#174b63" font-family="Arial, sans-serif" font-size="31" font-weight="700">R</text>
+  <path
+    d="M64 13C52 23 40 28 27 31L24 58C22 83 36 104 64 117C92 104 106 83 104 58L101 31C88 28 76 23 64 13Z"
+    fill="#ffffff"
+    stroke="#174b63"
+    stroke-linejoin="round"
+    stroke-width="7"
+  />
+  <path
+    d="M64 28C53 36 43 40 34 42L32 59"
+    fill="none"
+    stroke="#174b63"
+    stroke-linecap="round"
+    stroke-width="4"
+  />
+  <path
+    d="M64 28C75 36 85 40 94 42L96 59"
+    fill="none"
+    stroke="#174b63"
+    stroke-linecap="round"
+    stroke-width="4"
+  />
+  <g stroke="#174b63" stroke-linecap="round" stroke-width="4">
+    <path d="M64 43V49"/>
+    <path d="M84 51L80 56"/>
+    <path d="M91 69H85"/>
+    <path d="M84 88L80 83"/>
+    <path d="M64 96V90"/>
+    <path d="M44 88L48 83"/>
+    <path d="M37 69H43"/>
+    <path d="M44 51L48 56"/>
+  </g>
+  <path d="M64 69L48 56" fill="none" stroke="#2f7fa7" stroke-linecap="round" stroke-width="7"/>
+  <path d="M64 69L81 50" fill="none" stroke="#2f7fa7" stroke-linecap="round" stroke-width="7"/>
+  <circle cx="64" cy="69" r="7" fill="#2f7fa7"/>
+</svg>

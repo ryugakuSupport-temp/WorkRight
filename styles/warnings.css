@@ -1,0 +1,120 @@
+/* カレンダーの警告レベルと月間の法的問題周知 */
+.calendar-cell.shift-overlap-warning {
+  color: #725300;
+  background: #fff5c7;
+}
+
+.calendar-cell.shift-overlap-warning.selected {
+  box-shadow: inset 0 0 0 3px #c58a00;
+}
+
+.overlap-warning-icon {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #c58a00;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.daily-overlap-warning[hidden] {
+  display: none;
+}
+
+.daily-overlap-warning {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 16px 30px;
+  border-bottom: 1px solid #ead48e;
+  color: #725300;
+  background: #fff5c7;
+}
+
+.daily-overlap-warning-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #c58a00;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.daily-overlap-warning h3 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.monthly-legal-warning[hidden] {
+  display: none;
+}
+
+.monthly-legal-warning {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  width: min(100%, 640px);
+  margin-top: 13px;
+  padding: 12px 14px;
+  border: 1px solid #e8aaa4;
+  border-radius: 12px;
+  color: #76241f;
+  background: #fff0ee;
+}
+
+.monthly-legal-warning-mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #b63d34;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.monthly-legal-warning h2,
+.monthly-legal-warning p {
+  margin: 0;
+}
+
+.monthly-legal-warning h2 {
+  font-size: 0.82rem;
+}
+
+.monthly-legal-warning p {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .overlap-warning-icon {
+    top: 4px;
+    right: 4px;
+    width: 19px;
+    height: 19px;
+    font-size: 0.66rem;
+  }
+
+  .monthly-legal-warning {
+    padding: 11px 12px;
+  }
+
+  .daily-overlap-warning {
+    padding: 14px 16px;
+  }
+}

@@ -1,0 +1,137 @@
+/* シフト別・日間・月間の概算給料表示 */
+.monthly-estimated-pay,
+.daily-estimated-pay {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.monthly-estimated-pay strong,
+.daily-estimated-pay strong {
+  margin-left: 6px;
+  color: var(--green-deep);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.daily-estimated-pay {
+  margin-top: 7px;
+}
+
+.shift-details .shift-estimated-pay {
+  color: var(--green-deep);
+}
+
+.shift-details .shift-estimated-pay dt {
+  color: inherit;
+  font-weight: 750;
+}
+
+.shift-details .shift-estimated-pay dd {
+  font-weight: 900;
+}
+
+.pay-breakdown-button {
+  min-height: 40px;
+  margin-right: auto;
+  padding: 0 14px;
+  border: 1px solid #b9c8c1;
+  border-radius: 9px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.pay-breakdown-button:hover,
+.pay-breakdown-button:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.pay-breakdown-button:focus-visible {
+  outline: 3px solid rgba(23, 75, 99, 0.2);
+  outline-offset: 2px;
+}
+
+.pay-breakdown[hidden] {
+  display: none;
+}
+
+.pay-breakdown {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--green-soft);
+}
+
+.pay-breakdown h5,
+.pay-breakdown dl,
+.pay-breakdown p {
+  margin: 0;
+}
+
+.pay-breakdown h5 {
+  color: var(--green-deep);
+  font-size: 0.82rem;
+}
+
+.pay-breakdown dl {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.pay-breakdown dl div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 0.76rem;
+}
+
+.pay-breakdown dt {
+  color: var(--muted);
+}
+
+.pay-breakdown dd {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+
+.pay-breakdown .pay-breakdown-total {
+  margin-top: 3px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  color: var(--green-deep);
+}
+
+.pay-calculation-note {
+  margin-top: 11px !important;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .monthly-estimated-pay strong,
+  .daily-estimated-pay strong {
+    display: block;
+    margin: 3px 0 0;
+  }
+
+  .shift-item-actions {
+    flex-wrap: wrap;
+  }
+
+  .pay-breakdown-button {
+    flex-basis: 100%;
+    margin-right: 0;
+  }
+}

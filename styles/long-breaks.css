@@ -1,0 +1,390 @@
+/* 長期休み管理タブとカレンダー上の期間表示 */
+.management-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 5px;
+  border: 1px solid rgba(23, 75, 99, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 24px rgba(23, 75, 99, 0.07);
+}
+
+.management-tab {
+  min-height: 46px;
+  padding: 10px 20px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--ink);
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.management-tab:hover,
+.management-tab:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.management-tab:focus-visible {
+  outline: 3px solid rgba(23, 75, 99, 0.24);
+  outline-offset: 2px;
+}
+
+.management-tab.active {
+  border-color: var(--green);
+  background: var(--green-soft);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+
+.management-panel[hidden],
+.long-break-modal[hidden] {
+  display: none;
+}
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 8px 30px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  background: #fafcfb;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.long-break-legend-line {
+  width: 34px;
+  height: 7px;
+  border-radius: 999px;
+  background: #d98b32;
+}
+
+.long-break-band {
+  position: absolute;
+  top: 31px;
+  right: -1px;
+  left: -1px;
+  z-index: 1;
+  height: 8px;
+  background: #d98b32;
+  box-shadow: 0 1px 0 rgba(121, 71, 14, 0.18);
+  pointer-events: none;
+}
+
+.long-break-band.range-start {
+  left: 8px;
+  border-radius: 999px 0 0 999px;
+}
+
+.long-break-band.range-end {
+  right: 8px;
+  border-radius: 0 999px 999px 0;
+}
+
+.long-break-band.range-start.range-end {
+  border-radius: 999px;
+}
+
+.long-break-card {
+  overflow: hidden;
+  border: 1px solid rgba(23, 75, 99, 0.1);
+  border-radius: 26px;
+  background: var(--paper);
+  box-shadow:
+    0 20px 55px rgba(23, 75, 99, 0.1),
+    0 2px 6px rgba(23, 75, 99, 0.05);
+}
+
+.long-break-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 30px;
+  border-bottom: 1px solid var(--line);
+}
+
+.long-break-card-header h1,
+.long-break-card-header p,
+.long-break-item h2,
+.long-break-item p,
+.long-break-dialog-header h2 {
+  margin: 0;
+}
+
+.long-break-card-header h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.long-break-card-header > div > p:last-child {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.add-long-break-button,
+.save-long-break-button {
+  min-height: 48px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 12px;
+  color: var(--green-deep);
+  background: var(--green);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.add-long-break-button:hover,
+.add-long-break-button:focus-visible,
+.save-long-break-button:hover,
+.save-long-break-button:focus-visible {
+  background: var(--brand-hover);
+}
+
+.add-long-break-button:focus-visible,
+.save-long-break-button:focus-visible,
+.cancel-long-break-button:focus-visible,
+.long-break-close-button:focus-visible,
+.edit-long-break-button:focus-visible,
+.delete-long-break-button:focus-visible {
+  outline: 3px solid rgba(23, 75, 99, 0.24);
+  outline-offset: 2px;
+}
+
+.long-break-list {
+  display: grid;
+  gap: 14px;
+  padding: 24px 30px 30px;
+}
+
+.empty-long-break-message {
+  margin: 0;
+  padding: 34px 18px;
+  border: 1px dashed #cbd8d2;
+  border-radius: 16px;
+  color: var(--muted);
+  background: #fafcfb;
+  text-align: center;
+}
+
+.long-break-item {
+  position: relative;
+  padding: 20px 22px 18px 28px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.long-break-item::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 7px;
+  background: #d98b32;
+  content: "";
+}
+
+.long-break-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.long-break-item h2 {
+  font-size: 1.05rem;
+}
+
+.long-break-period {
+  margin-top: 6px !important;
+  color: var(--green-deep);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.long-break-memo {
+  margin-top: 14px !important;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.long-break-item-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 7px;
+}
+
+.edit-long-break-button,
+.delete-long-break-button,
+.cancel-long-break-button,
+.long-break-close-button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.edit-long-break-button,
+.delete-long-break-button {
+  padding: 8px 14px;
+}
+
+.edit-long-break-button {
+  color: var(--green-deep);
+}
+
+.delete-long-break-button {
+  color: #a3362f;
+}
+
+.edit-long-break-button:hover,
+.edit-long-break-button:focus-visible {
+  background: var(--green-soft);
+}
+
+.delete-long-break-button:hover,
+.delete-long-break-button:focus-visible {
+  background: #fff0ee;
+}
+
+.long-break-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.long-break-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 48, 46, 0.58);
+  cursor: pointer;
+}
+
+.long-break-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 680px);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(23, 75, 99, 0.22);
+}
+
+.long-break-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.long-break-dialog-header h2 {
+  font-size: 1.35rem;
+}
+
+.long-break-close-button {
+  width: 42px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 1.45rem;
+}
+
+.long-break-form {
+  display: grid;
+  gap: 18px;
+  padding: 26px 28px 28px;
+}
+
+.long-break-date-fields,
+.long-break-form-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cancel-long-break-button {
+  padding: 10px 18px;
+  color: var(--muted);
+}
+
+.cancel-long-break-button:hover,
+.cancel-long-break-button:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.long-break-form-message {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #edc0bc;
+  border-radius: 10px;
+  color: #8c2f29;
+  background: #fff0ee;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .management-tab {
+    flex: 1;
+    padding-inline: 10px;
+  }
+
+  .calendar-legend {
+    padding-inline: 16px;
+  }
+
+  .long-break-band {
+    top: 4px;
+    height: 6px;
+  }
+
+  .long-break-card,
+  .long-break-dialog {
+    border-radius: 20px;
+  }
+
+  .long-break-card-header,
+  .long-break-item-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .long-break-card-header,
+  .long-break-list,
+  .long-break-dialog-header,
+  .long-break-form {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .long-break-date-fields,
+  .long-break-form-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .long-break-item-actions {
+    align-self: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .management-tab {
+    transition: none;
+  }
+}
