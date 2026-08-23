@@ -3,14 +3,13 @@
   "use strict";
 
   const MAX_SHIFTS_PER_DAY = 5;
-  const NORMAL_WEEKLY_LIMIT_MINUTES = 28 * 60;
-  const LONG_BREAK_DAILY_LIMIT_MINUTES = 8 * 60;
   const MINUTES_PER_DAY = 24 * 60;
   const NIGHT_START_MINUTE = 22 * 60;
   const NIGHT_END_MINUTE = 5 * 60;
   const NIGHT_PREMIUM_RATE = 0.25;
   const language = window.ShiftLanguage;
   const storage = window.ShiftStorage;
+  const workLimit = window.ShiftWorkLimit;
 
   const monthHeading = document.getElementById("calendar-month-heading");
   const monthlyEstimatedPay = document.getElementById("monthly-estimated-pay");
@@ -24,6 +23,7 @@
   const todayButton = document.getElementById("today");
   const shiftModal = document.getElementById("shift-modal");
   const shiftModalBackdrop = document.getElementById("shift-modal-backdrop");
+  const closeShiftModalButton = document.getElementById("close-shift-modal");
   const selectedDateHeading = document.getElementById("selected-date-heading");
   const dailyEstimatedPay = document.getElementById("daily-estimated-pay");
   const selectedPeriodRange = document.getElementById("selected-period-range");
@@ -44,7 +44,6 @@
   const breakEndInput = document.getElementById("break-end-time");
   const hourlyWageInput = shiftForm.elements.namedItem("hourlyWage");
   const shiftValidatedInputs = [
-    jobNameInput,
     startTimeInput,
     endTimeInput,
     breakStartInput,
@@ -53,6 +52,22 @@
   ];
   const formMessage = document.getElementById("form-message");
   const shiftList = document.getElementById("shift-list");
+  const dailyLimitWarning = document.getElementById("daily-limit-warning");
+  const dailyLimitWarningHeading = document.getElementById(
+    "daily-limit-warning-heading",
+  );
+  const dailyLimitWarningPeriod = document.getElementById(
+    "daily-limit-warning-period",
+  );
+  const dailyLimitWarningTotal = document.getElementById(
+    "daily-limit-warning-total",
+  );
+  const dailyLimitWarningLimit = document.getElementById(
+    "daily-limit-warning-limit",
+  );
+  const dailyLimitWarningExcess = document.getElementById(
+    "daily-limit-warning-excess",
+  );
   const weeklyWarning = document.getElementById("weekly-warning");
   const weeklyWarningHeading = document.getElementById("weekly-warning-heading");
   const weeklyWarningPeriod = document.getElementById("weekly-warning-period");
@@ -83,13 +98,11 @@
   const longBreakFormHeading = document.getElementById(
     "long-break-form-heading",
   );
-  const longBreakNameInput = document.getElementById("long-break-name");
   const longBreakStartDateInput = document.getElementById(
     "long-break-start-date",
   );
   const longBreakEndDateInput = document.getElementById("long-break-end-date");
   const longBreakValidatedInputs = [
-    longBreakNameInput,
     longBreakStartDateInput,
     longBreakEndDateInput,
   ];
@@ -225,6 +238,12 @@
     });
   }
 
+  function formatMinutesAsClock(minutes) {
+    const hours = String(Math.floor(minutes / 60)).padStart(2, "0");
+    const remainingMinutes = String(minutes % 60).padStart(2, "0");
+    return `${hours}:${remainingMinutes}`;
+  }
+
   function formatYen(amount) {
     return translate("currency.yen", {
       amount: amount.toLocaleString(getCurrentLocale()),
@@ -265,16 +284,6 @@
         (longBreak) =>
           longBreak.startDate <= dateKey && dateKey <= longBreak.endDate,
       ) ?? null
-    );
-  }
-
-  function getLatestLongBreakEndingBefore(date) {
-    const dateKey = toDateKey(date);
-    return (
-      longBreaks
-        .filter((longBreak) => longBreak.endDate < dateKey)
-        .sort((left, right) => right.endDate.localeCompare(left.endDate))[0] ??
-      null
     );
   }
 
@@ -389,13 +398,12 @@
       record.id > 0 &&
       isValidStoredDate(record.date) &&
       typeof record.jobName === "string" &&
-      record.jobName.trim() !== "" &&
       isValidStoredTime(record.startTime) &&
       isValidStoredTime(record.endTime) &&
       isValidStoredTime(record.breakStartTime, true) &&
       isValidStoredTime(record.breakEndTime, true) &&
       Number.isSafeInteger(record.hourlyWage) &&
-      record.hourlyWage >= 1 &&
+      record.hourlyWage >= 0 &&
       typeof record.memo === "string";
 
     if (!hasValidValues) throw new Error("Stored shift data is invalid.");
@@ -451,7 +459,6 @@
       Number.isSafeInteger(record.id) &&
       record.id > 0 &&
       typeof record.name === "string" &&
-      record.name.trim() !== "" &&
       isValidStoredDate(record.startDate) &&
       isValidStoredDate(record.endDate) &&
       record.startDate <= record.endDate &&
@@ -656,6 +663,16 @@
     return `${shift.startTime}${translate("common.rangeSeparator")}${shift.isOvernight ? translate("shift.nextDay") : ""}${shift.endTime}`;
   }
 
+  function getShiftDisplayName(shift) {
+    return shift.jobName === "" ? translate("shift.unnamed") : shift.jobName;
+  }
+
+  function getLongBreakDisplayName(longBreak) {
+    return longBreak.name.trim() === ""
+      ? translate("longBreak.unnamed")
+      : longBreak.name;
+  }
+
   function confirmOverlappingShift(overlappingEntries) {
     if (overlappingEntries.length === 0) return true;
 
@@ -664,7 +681,7 @@
         ({ dateKey, shift }) =>
           translate("overlap.detail", {
             date: formatDateKey(dateKey),
-            name: shift.jobName,
+            name: getShiftDisplayName(shift),
             time: formatShiftTimeRange(shift),
           }),
       )
@@ -684,184 +701,31 @@
     );
   }
 
-  function splitOvernightShiftAtMidnight(shift) {
-    if (!shift.isOvernight) {
-      return {
-        startDayMinutes: shift.actualMinutes,
-        nextDayMinutes: 0,
-      };
-    }
-
-    const midnight = 24 * 60;
-    const shiftStartMinute = parseTime(shift.startTime);
-    const shiftEndMinute = parseTime(shift.endTime) + midnight;
-    const hasBreak = shift.breakStartMinute !== null;
-    const startDayBreakMinutes = hasBreak
-      ? getIntervalOverlap(
-          shiftStartMinute,
-          midnight,
-          shift.breakStartMinute,
-          shift.breakEndMinute,
-        )
-      : 0;
-    const nextDayBreakMinutes = hasBreak
-      ? getIntervalOverlap(
-          midnight,
-          shiftEndMinute,
-          shift.breakStartMinute,
-          shift.breakEndMinute,
-        )
-      : 0;
-
-    return {
-      startDayMinutes:
-        midnight - shiftStartMinute - startDayBreakMinutes,
-      nextDayMinutes:
-        shiftEndMinute - midnight - nextDayBreakMinutes,
-    };
-  }
-
-  function getMidnightAdjustedDailyMinutes(date, includePreviousDay = true) {
-    const previousDate = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate() - 1,
+  function getWorkLimitSummaries(date) {
+    return workLimit.getWorkLimitSummaries(
+      toDateKey(date),
+      shiftsByDate,
+      longBreaks,
     );
-    const startDayMinutes = getShifts(toDateKey(date)).reduce(
-      (total, shift) =>
-        total + splitOvernightShiftAtMidnight(shift).startDayMinutes,
-      0,
-    );
-    const minutesCarriedFromPreviousDay = includePreviousDay
-      ? getShifts(toDateKey(previousDate)).reduce(
-          (total, shift) =>
-            total + splitOvernightShiftAtMidnight(shift).nextDayMinutes,
-          0,
-        )
-      : 0;
-
-    return startDayMinutes + minutesCarriedFromPreviousDay;
   }
 
-  function getWeeklyWorkSummary(date) {
-    const naturalPeriodStart = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate() - 6,
-    );
-    const latestLongBreak = getLatestLongBreakEndingBefore(date);
-    const normalPeriodRestart = latestLongBreak
-      ? addDays(parseDateKey(latestLongBreak.endDate), 1)
-      : null;
-    const periodStart =
-      normalPeriodRestart && normalPeriodRestart > naturalPeriodStart
-        ? normalPeriodRestart
-        : naturalPeriodStart;
-    let unadjustedTotalMinutes = 0;
-
-    for (
-      let targetDate = periodStart;
-      targetDate <= date;
-      targetDate = addDays(targetDate, 1)
-    ) {
-      unadjustedTotalMinutes += getDailyActualMinutes(targetDate);
-    }
-
-    let totalMinutes = unadjustedTotalMinutes;
-    let wasMidnightAdjusted = false;
-
-    if (unadjustedTotalMinutes > NORMAL_WEEKLY_LIMIT_MINUTES) {
-      totalMinutes = 0;
-      wasMidnightAdjusted = true;
-
-      for (
-        let targetDate = periodStart;
-        targetDate <= date;
-        targetDate = addDays(targetDate, 1)
-      ) {
-        const previousDate = addDays(targetDate, -1);
-        totalMinutes += getMidnightAdjustedDailyMinutes(
-          targetDate,
-          getLongBreakForDate(previousDate) === null,
-        );
-      }
-    }
-
-    return {
-      type: "normal",
-      periodStart,
-      periodEnd: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-      limitMinutes: NORMAL_WEEKLY_LIMIT_MINUTES,
-      totalMinutes,
-      unadjustedTotalMinutes,
-      excessMinutes: Math.max(0, totalMinutes - NORMAL_WEEKLY_LIMIT_MINUTES),
-      hasWarning: totalMinutes > NORMAL_WEEKLY_LIMIT_MINUTES,
-      wasMidnightAdjusted,
-    };
-  }
-
-  function getLongBreakWorkSummary(date, longBreak) {
-    const dateKey = toDateKey(date);
-    const previousDate = addDays(date, -1);
-    const previousDateKey = toDateKey(previousDate);
-    const unadjustedTotalMinutes = getDailyActualMinutes(date);
-    const shouldSplitCurrentDate =
-      unadjustedTotalMinutes > LONG_BREAK_DAILY_LIMIT_MINUTES;
-    const shouldCarryFromPreviousDate =
-      previousDateKey >= longBreak.startDate &&
-      getDailyActualMinutes(previousDate) > LONG_BREAK_DAILY_LIMIT_MINUTES;
-    const currentDateMinutes = shouldSplitCurrentDate
-      ? getShifts(dateKey).reduce(
-          (total, shift) =>
-            total + splitOvernightShiftAtMidnight(shift).startDayMinutes,
-          0,
-        )
-      : unadjustedTotalMinutes;
-    const previousDateMinutes = shouldCarryFromPreviousDate
-      ? getShifts(previousDateKey).reduce(
-          (total, shift) =>
-            total + splitOvernightShiftAtMidnight(shift).nextDayMinutes,
-          0,
-        )
-      : 0;
-    const totalMinutes = currentDateMinutes + previousDateMinutes;
-
-    return {
-      type: "long-break",
-      longBreak,
-      periodStart: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-      periodEnd: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-      limitMinutes: LONG_BREAK_DAILY_LIMIT_MINUTES,
-      totalMinutes,
-      unadjustedTotalMinutes,
-      excessMinutes: Math.max(0, totalMinutes - LONG_BREAK_DAILY_LIMIT_MINUTES),
-      hasWarning: totalMinutes > LONG_BREAK_DAILY_LIMIT_MINUTES,
-      wasMidnightAdjusted:
-        shouldSplitCurrentDate || shouldCarryFromPreviousDate,
-    };
-  }
-
-  function getWorkLimitSummary(date) {
-    const longBreak = getLongBreakForDate(date);
-    return longBreak
-      ? getLongBreakWorkSummary(date, longBreak)
-      : getWeeklyWorkSummary(date);
-  }
-
-  function getRedWarningDates(year, month) {
+  function getWorkWarningDates(year, month) {
     const lastDay = new Date(year, month + 1, 0).getDate();
     const warningDates = [];
 
     for (let day = 1; day <= lastDay; day += 1) {
       const date = new Date(year, month, day);
-      if (getWorkLimitSummary(date).hasWarning) warningDates.push(date);
+      const summaries = getWorkLimitSummaries(date);
+      if (summaries.daily?.hasWarning || summaries.weekly.hasWarning) {
+        warningDates.push(date);
+      }
     }
 
     return warningDates;
   }
 
   function updateMonthlyLegalWarning(year, month) {
-    const warningDates = getRedWarningDates(year, month);
+    const warningDates = getWorkWarningDates(year, month);
 
     if (warningDates.length === 0) {
       monthlyLegalWarningMessage.textContent = "";
@@ -893,10 +757,14 @@
     const registeredShiftCount = getShifts(dateKey).length;
     const dailyActualMinutes = getDailyActualMinutes(date);
     const longBreak = getLongBreakForDate(date);
-    const workLimitSummary = getWorkLimitSummary(date);
+    const workLimitSummaries = getWorkLimitSummaries(date);
+    const hasDailyLimitWarning =
+      workLimitSummaries.daily?.hasWarning ?? false;
+    const hasWeeklyLimitWarning = workLimitSummaries.weekly.hasWarning;
+    const hasWorkLimitWarning =
+      hasDailyLimitWarning || hasWeeklyLimitWarning;
     const hasOverlapWarning = overlapDateKeys.has(dateKey);
-    const showOverlapWarning =
-      hasOverlapWarning && !workLimitSummary.hasWarning;
+    const showOverlapWarning = hasOverlapWarning && !hasWorkLimitWarning;
     const cell = document.createElement("div");
     const button = document.createElement("button");
     const classNames = ["calendar-cell"];
@@ -904,8 +772,17 @@
     if (!isCurrentMonth) classNames.push("outside-month");
     if (isToday) classNames.push("today");
     if (isSelected) classNames.push("selected");
-    if (workLimitSummary.hasWarning) classNames.push("weekly-limit-warning");
-    if (showOverlapWarning) classNames.push("shift-overlap-warning");
+    if (hasDailyLimitWarning) {
+      classNames.push("daily-limit-warning");
+    } else if (hasWeeklyLimitWarning) {
+      classNames.push(
+        workLimitSummaries.weekly.type === "weekly-long-break"
+          ? "weekly-40-limit-warning"
+          : "weekly-28-limit-warning",
+      );
+    } else if (showOverlapWarning) {
+      classNames.push("shift-overlap-warning");
+    }
     if (longBreak) classNames.push("long-break-day");
     if (dayOfWeek === 0) classNames.push("sunday");
     if (dayOfWeek === 6) classNames.push("saturday");
@@ -931,18 +808,33 @@
     }
     if (longBreak) {
       ariaParts.push(
-        translate("calendar.ariaLongBreak", { name: longBreak.name }),
-      );
-    }
-    if (workLimitSummary.hasWarning) {
-      ariaParts.push(
-        translate("calendar.ariaRedWarning", {
-          total: formatMinutes(workLimitSummary.totalMinutes),
-          limit: formatMinutes(workLimitSummary.limitMinutes),
+        translate("calendar.ariaLongBreak", {
+          name: getLongBreakDisplayName(longBreak),
         }),
       );
     }
-    if (showOverlapWarning) {
+    if (hasDailyLimitWarning) {
+      ariaParts.push(
+        translate("calendar.ariaDailyLimitWarning", {
+          total: formatMinutes(workLimitSummaries.daily.totalMinutes),
+          limit: formatMinutes(workLimitSummaries.daily.limitMinutes),
+        }),
+      );
+    }
+    if (hasWeeklyLimitWarning) {
+      ariaParts.push(
+        translate(
+          workLimitSummaries.weekly.type === "weekly-long-break"
+            ? "calendar.ariaWeekly40Warning"
+            : "calendar.ariaWeekly28Warning",
+          {
+            total: formatMinutes(workLimitSummaries.weekly.totalMinutes),
+            limit: formatMinutes(workLimitSummaries.weekly.limitMinutes),
+          },
+        ),
+      );
+    }
+    if (hasOverlapWarning) {
       ariaParts.push(translate("calendar.ariaOverlapWarning"));
     }
     if (isToday) ariaParts.push(translate("calendar.ariaToday"));
@@ -957,19 +849,21 @@
     dateElement.textContent = String(date.getDate());
     button.appendChild(dateElement);
 
-    if (registeredShiftCount > 0) {
-      const countBadge = document.createElement("span");
-      countBadge.className = "calendar-shift-count";
-      countBadge.textContent = translate("shift.count", {
-        count: registeredShiftCount,
-      });
-      button.appendChild(countBadge);
+    if (dailyActualMinutes > 0) {
+      const workTime = document.createElement("span");
+      workTime.className = "calendar-work-time";
+      workTime.textContent = formatMinutesAsClock(dailyActualMinutes);
+      button.appendChild(workTime);
     }
 
-    if (workLimitSummary.hasWarning) {
+    if (hasDailyLimitWarning || hasWeeklyLimitWarning) {
       const warningIcon = document.createElement("span");
-      warningIcon.className = "weekly-warning-icon";
-      warningIcon.textContent = "!";
+      warningIcon.className = "work-limit-warning-icon";
+      warningIcon.textContent = hasDailyLimitWarning
+        ? "8"
+        : workLimitSummaries.weekly.type === "weekly-long-break"
+          ? "40"
+          : "28";
       warningIcon.setAttribute("aria-hidden", "true");
       button.appendChild(warningIcon);
     } else if (showOverlapWarning) {
@@ -1041,11 +935,12 @@
     const time = document.createElement("p");
     const details = document.createElement("dl");
     const pay = calculateShiftPay(shift);
+    const displayName = getShiftDisplayName(shift);
 
     item.className = `shift-item${editingShiftId === shift.id ? " editing" : ""}`;
     item.dataset.shiftId = String(shift.id);
     header.className = "shift-item-header";
-    jobName.textContent = shift.jobName;
+    jobName.textContent = displayName;
     time.textContent = formatShiftTimeRange(shift);
     header.append(jobName, time);
 
@@ -1085,13 +980,6 @@
     details.append(actualDetail, breakDetail, wageDetail, payDetail);
     item.append(header, details);
 
-    if (shift.memo !== "") {
-      const memo = document.createElement("p");
-      memo.className = "shift-memo";
-      memo.textContent = shift.memo;
-      item.appendChild(memo);
-    }
-
     const actions = document.createElement("div");
     const payBreakdownButton = document.createElement("button");
     const editButton = document.createElement("button");
@@ -1110,14 +998,14 @@
     payBreakdownButton.setAttribute("aria-controls", payBreakdownId);
     payBreakdownButton.setAttribute(
       "aria-label",
-      translate("pay.breakdownShowAria", { name: shift.jobName }),
+      translate("pay.breakdownShowAria", { name: displayName }),
     );
     editButton.className = "edit-shift-button";
     editButton.type = "button";
     editButton.textContent = translate("common.edit");
     editButton.setAttribute(
       "aria-label",
-      translate("shift.editAria", { name: shift.jobName }),
+      translate("shift.editAria", { name: displayName }),
     );
     editButton.addEventListener("click", () => startEditingShift(shift.id));
 
@@ -1126,7 +1014,7 @@
     deleteButton.textContent = translate("common.delete");
     deleteButton.setAttribute(
       "aria-label",
-      translate("shift.deleteAria", { name: shift.jobName }),
+      translate("shift.deleteAria", { name: displayName }),
     );
     deleteButton.addEventListener("click", () => deleteShift(shift.id));
 
@@ -1172,7 +1060,7 @@
         "aria-label",
         translate(
           willOpen ? "pay.breakdownCloseAria" : "pay.breakdownShowAria",
-          { name: shift.jobName },
+          { name: displayName },
         ),
       );
     });
@@ -1204,25 +1092,31 @@
     formMessage.hidden = message === "";
   }
 
-  function updateWeeklyWarning(summary) {
-    if (!summary.hasWarning) {
-      weeklyWarning.hidden = true;
+  function updateWorkLimitWarning(
+    container,
+    heading,
+    period,
+    total,
+    limit,
+    excess,
+    summary,
+    headingKey,
+  ) {
+    if (summary === null || !summary.hasWarning) {
+      container.hidden = true;
       return;
     }
 
-    weeklyWarningHeading.textContent =
-      summary.type === "long-break"
-        ? translate("warning.longBreakHeading")
-        : translate("warning.normalHeading");
-    weeklyWarningPeriod.textContent = `${formatPeriodDate(summary.periodStart)}${translate("common.rangeSeparator")}${formatPeriodDate(summary.periodEnd)}`;
-    weeklyWarningTotal.textContent = formatMinutes(summary.totalMinutes);
-    weeklyWarningLimit.textContent = formatMinutes(summary.limitMinutes);
-    weeklyWarningExcess.textContent = formatMinutes(summary.excessMinutes);
-    weeklyWarning.hidden = false;
+    heading.textContent = translate(headingKey);
+    period.textContent = `${formatDateKey(summary.periodStart)}${translate("common.rangeSeparator")}${formatDateKey(summary.periodEnd)}`;
+    total.textContent = formatMinutes(summary.totalMinutes);
+    limit.textContent = formatMinutes(summary.limitMinutes);
+    excess.textContent = formatMinutes(summary.excessMinutes);
+    container.hidden = false;
   }
 
   function updateSelectedPeriodSummary(summary) {
-    selectedPeriodRange.textContent = `${formatPeriodDate(summary.periodStart)}${translate("common.rangeSeparator")}${formatPeriodDate(summary.periodEnd)}`;
+    selectedPeriodRange.textContent = `${formatDateKey(summary.periodStart)}${translate("common.rangeSeparator")}${formatDateKey(summary.periodEnd)}`;
     selectedPeriodWorked.textContent = formatMinutes(summary.totalMinutes);
     selectedPeriodRemaining.textContent = formatMinutes(
       Math.max(0, summary.limitMinutes - summary.totalMinutes),
@@ -1260,8 +1154,8 @@
     shiftForm.elements.namedItem("endTime").value = shift.endTime;
     shiftForm.elements.namedItem("breakStartTime").value = shift.breakStartTime;
     shiftForm.elements.namedItem("breakEndTime").value = shift.breakEndTime;
-    shiftForm.elements.namedItem("hourlyWage").value = String(shift.hourlyWage);
-    shiftForm.elements.namedItem("memo").value = shift.memo;
+    shiftForm.elements.namedItem("hourlyWage").value =
+      shift.hourlyWage === 0 ? "" : String(shift.hourlyWage);
     setFormMessage("");
     renderShiftList(shifts);
     shiftForm.scrollIntoView({ block: "start" });
@@ -1278,7 +1172,7 @@
     if (
       !shift ||
       !window.confirm(
-        translate("shift.deleteConfirm", { name: shift.jobName }),
+        translate("shift.deleteConfirm", { name: getShiftDisplayName(shift) }),
       )
     ) {
       return;
@@ -1330,7 +1224,7 @@
 
     const shifts = getShifts(toDateKey(selectedDate));
     const hasReachedLimit = shifts.length >= MAX_SHIFTS_PER_DAY;
-    const workLimitSummary = getWorkLimitSummary(selectedDate);
+    const workLimitSummaries = getWorkLimitSummaries(selectedDate);
     let isEditingExistingShift =
       editingShiftId !== null && shifts.some((shift) => shift.id === editingShiftId);
 
@@ -1349,8 +1243,29 @@
     });
     shiftFields.disabled = hasReachedLimit && !isEditingExistingShift;
     renderShiftList(shifts);
-    updateSelectedPeriodSummary(workLimitSummary);
-    updateWeeklyWarning(workLimitSummary);
+    updateSelectedPeriodSummary(workLimitSummaries.weekly);
+    updateWorkLimitWarning(
+      dailyLimitWarning,
+      dailyLimitWarningHeading,
+      dailyLimitWarningPeriod,
+      dailyLimitWarningTotal,
+      dailyLimitWarningLimit,
+      dailyLimitWarningExcess,
+      workLimitSummaries.daily,
+      "warning.longBreakHeading",
+    );
+    updateWorkLimitWarning(
+      weeklyWarning,
+      weeklyWarningHeading,
+      weeklyWarningPeriod,
+      weeklyWarningTotal,
+      weeklyWarningLimit,
+      weeklyWarningExcess,
+      workLimitSummaries.weekly,
+      workLimitSummaries.weekly.type === "weekly-long-break"
+        ? "warning.longBreakWeeklyHeading"
+        : "warning.normalHeading",
+    );
     updateDailyOverlapWarning(selectedDate);
 
     if (isEditingExistingShift) {
@@ -1424,10 +1339,12 @@
     const editButton = document.createElement("button");
     const deleteButton = document.createElement("button");
 
+    const displayName = getLongBreakDisplayName(longBreak);
+
     item.className = "long-break-item";
     item.dataset.longBreakId = String(longBreak.id);
     header.className = "long-break-item-header";
-    name.textContent = longBreak.name;
+    name.textContent = displayName;
     period.className = "long-break-period";
     period.textContent = `${formatDateKey(longBreak.startDate)}${translate("common.rangeSeparator")}${formatDateKey(longBreak.endDate)}`;
     text.append(name, period);
@@ -1438,7 +1355,7 @@
     editButton.textContent = translate("common.edit");
     editButton.setAttribute(
       "aria-label",
-      translate("longBreak.editAria", { name: longBreak.name }),
+      translate("longBreak.editAria", { name: displayName }),
     );
     editButton.addEventListener("click", () => openLongBreakModal(longBreak.id));
 
@@ -1447,19 +1364,12 @@
     deleteButton.textContent = translate("common.delete");
     deleteButton.setAttribute(
       "aria-label",
-      translate("longBreak.deleteAria", { name: longBreak.name }),
+      translate("longBreak.deleteAria", { name: displayName }),
     );
     deleteButton.addEventListener("click", () => deleteLongBreak(longBreak.id));
     actions.append(editButton, deleteButton);
     header.append(text, actions);
     item.appendChild(header);
-
-    if (longBreak.memo !== "") {
-      const memo = document.createElement("p");
-      memo.className = "long-break-memo";
-      memo.textContent = longBreak.memo;
-      item.appendChild(memo);
-    }
 
     return item;
   }
@@ -1507,7 +1417,6 @@
       longBreakForm.elements.namedItem("name").value = longBreak.name;
       longBreakForm.elements.namedItem("startDate").value = longBreak.startDate;
       longBreakForm.elements.namedItem("endDate").value = longBreak.endDate;
-      longBreakForm.elements.namedItem("memo").value = longBreak.memo;
     }
 
     longBreakModal.hidden = false;
@@ -1540,7 +1449,9 @@
     if (
       !longBreak ||
       !window.confirm(
-        translate("longBreak.deleteConfirm", { name: longBreak.name }),
+        translate("longBreak.deleteConfirm", {
+          name: getLongBreakDisplayName(longBreak),
+        }),
       )
     ) {
       return;
@@ -1571,14 +1482,6 @@
     const startDate = String(formData.get("startDate"));
     const endDate = String(formData.get("endDate"));
 
-    if (name === "") {
-      longBreakNameInput.setCustomValidity(
-        translate("longBreak.validation.nameRequired"),
-      );
-      longBreakNameInput.reportValidity();
-      return;
-    }
-
     if (startDate > endDate) {
       setLongBreakFormMessage(
         translate("longBreak.validation.dateOrder"),
@@ -1597,7 +1500,7 @@
     if (overlappingLongBreak) {
       setLongBreakFormMessage(
         translate("longBreak.validation.overlap", {
-          name: overlappingLongBreak.name,
+          name: getLongBreakDisplayName(overlappingLongBreak),
         }),
       );
       longBreakStartDateInput.focus();
@@ -1608,7 +1511,7 @@
       name,
       startDate,
       endDate,
-      memo: String(formData.get("memo")).trim(),
+      memo: "",
     };
 
     const editedLongBreakIndex =
@@ -1670,18 +1573,11 @@
     const formData = new FormData(shiftForm);
     const jobName = String(formData.get("jobName")).trim();
 
-    if (jobName === "") {
-      jobNameInput.setCustomValidity(
-        translate("shift.validation.jobRequired"),
-      );
-      jobNameInput.reportValidity();
-      return;
-    }
-
     const startTime = String(formData.get("startTime"));
     const endTime = String(formData.get("endTime"));
     const breakStartTime = String(formData.get("breakStartTime"));
     const breakEndTime = String(formData.get("breakEndTime"));
+    const hourlyWageText = String(formData.get("hourlyWage")).trim();
     const calculatedTime = calculateShiftTime(
       startTime,
       endTime,
@@ -1705,8 +1601,8 @@
       breakMinutes: calculatedTime.breakMinutes,
       breakStartMinute: calculatedTime.breakStartMinute,
       breakEndMinute: calculatedTime.breakEndMinute,
-      hourlyWage: Number(formData.get("hourlyWage")),
-      memo: String(formData.get("memo")).trim(),
+      hourlyWage: hourlyWageText === "" ? 0 : Number(hourlyWageText),
+      memo: "",
       actualMinutes: calculatedTime.actualMinutes,
       isOvernight: calculatedTime.isOvernight,
     };
@@ -1754,20 +1650,7 @@
     shiftSubmitButton.disabled = false;
     shifts.sort(compareShifts);
     shiftsByDate.set(dateKey, shifts);
-
-    resetFormMode();
-    renderCalendar();
-    updateDayPanel();
-
-    if (wasEditing) {
-      setFormMessage(translate("shift.changed"), "success");
-    } else if (shifts.length < MAX_SHIFTS_PER_DAY) {
-      setFormMessage(translate("shift.registered"), "success");
-    }
-
-    if (!shiftFields.disabled) {
-      jobNameInput.focus();
-    }
+    closeShiftModal();
   });
 
   function showStorageRecovery() {
@@ -1826,10 +1709,7 @@
   });
 
   cancelEditButton.addEventListener("click", () => {
-    resetFormMode();
-    updateDayPanel();
-
-    if (!shiftFields.disabled) jobNameInput.focus();
+    closeShiftModal();
   });
 
   shiftManagementTab.addEventListener("click", () =>
@@ -1859,6 +1739,7 @@
 
   previousMonthButton.addEventListener("click", () => moveMonth(-1));
   nextMonthButton.addEventListener("click", () => moveMonth(1));
+  closeShiftModalButton.addEventListener("click", () => closeShiftModal());
   shiftModalBackdrop.addEventListener("click", () => closeShiftModal());
   todayButton.addEventListener("click", () => {
     const now = new Date();

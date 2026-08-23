@@ -27,6 +27,7 @@
     <script src="./lang/vi.js" defer></script>
     <script src="./scripts/storage.js" defer></script>
     <script src="./lang/language.js" defer></script>
+    <script src="./scripts/work-limit.js" defer></script>
     <script src="./scripts/calendar.js" defer></script>
   </head>
   <body>
@@ -268,8 +269,50 @@
                 </div>
               </dl>
             </div>
-            <p id="shift-count" class="shift-count-summary"></p>
+            <div class="day-panel-actions">
+              <p id="shift-count" class="shift-count-summary"></p>
+              <button
+                id="close-shift-modal"
+                class="shift-close-button"
+                type="button"
+                aria-label="シフト入力画面を閉じる"
+                data-i18n-aria-label="shift.closeAria"
+              >
+              </button>
+            </div>
           </header>
+
+          <section
+            id="daily-limit-warning"
+            class="weekly-warning"
+            aria-labelledby="daily-limit-warning-heading"
+            hidden
+          >
+            <span class="weekly-warning-mark" aria-hidden="true">!</span>
+            <div>
+              <h3 id="daily-limit-warning-heading" data-i18n="warning.longBreakHeading">
+                長期休み期間の1日の勤務時間が8時間を超えています
+              </h3>
+              <dl class="weekly-warning-details">
+                <div>
+                  <dt data-i18n="summary.period">集計期間</dt>
+                  <dd id="daily-limit-warning-period"></dd>
+                </div>
+                <div>
+                  <dt data-i18n="warning.total">合計勤務時間</dt>
+                  <dd id="daily-limit-warning-total"></dd>
+                </div>
+                <div>
+                  <dt data-i18n="warning.limit">上限</dt>
+                  <dd id="daily-limit-warning-limit">8時間</dd>
+                </div>
+                <div>
+                  <dt data-i18n="warning.excess">超過時間</dt>
+                  <dd id="daily-limit-warning-excess"></dd>
+                </div>
+              </dl>
+            </div>
+          </section>
 
           <section
             id="weekly-warning"
@@ -322,13 +365,12 @@
               <fieldset id="shift-fields">
                 <div class="form-grid">
                   <label class="form-field form-field-wide">
-                    <span><span data-i18n="shift.form.jobName">バイト名</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                    <span data-i18n="shift.form.jobName">バイト名</span>
                     <input
                       id="job-name"
                       name="jobName"
                       type="text"
                       autocomplete="off"
-                      required
                     >
                   </label>
 
@@ -367,21 +409,15 @@
                   </p>
 
                   <label class="form-field">
-                    <span><span data-i18n="shift.form.hourlyWage">時給（円）</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                    <span data-i18n="shift.form.hourlyWage">時給（円）</span>
                     <input
                       name="hourlyWage"
                       type="number"
-                      min="1"
+                      min="0"
                       step="1"
                       inputmode="numeric"
-                      required
                     >
-                    <small class="wage-note" data-i18n="shift.form.wageHint">通常の時給を入力してください</small>
-                  </label>
-
-                  <label class="form-field form-field-wide">
-                    <span data-i18n="common.memo">その他メモ</span>
-                    <textarea name="memo" rows="3"></textarea>
+                    <small class="wage-note" data-i18n="shift.form.wageHint">未入力の場合は0円として計算します</small>
                   </label>
                 </div>
 
@@ -483,19 +519,17 @@
                 aria-label="長期休み入力画面を閉じる"
                 data-i18n-aria-label="longBreak.closeAria"
               >
-                ×
               </button>
             </header>
 
             <form id="long-break-form" class="long-break-form">
               <label class="form-field">
-                <span><span data-i18n="longBreak.name">長期休み名</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
+                <span data-i18n="longBreak.name">長期休み名</span>
                 <input
                   id="long-break-name"
                   name="name"
                   type="text"
                   autocomplete="off"
-                  required
                 >
               </label>
               <div class="long-break-date-fields">
@@ -508,11 +542,6 @@
                   <input id="long-break-end-date" name="endDate" type="date" required>
                 </label>
               </div>
-              <label class="form-field">
-                <span data-i18n="common.memo">その他メモ</span>
-                <textarea name="memo" rows="4"></textarea>
-              </label>
-
               <p
                 id="long-break-form-message"
                 class="long-break-form-message"

@@ -60,19 +60,24 @@
   width: 34px;
   height: 7px;
   border-radius: 999px;
-  background: #d98b32;
+  background: #9fd8c5;
 }
 
 .long-break-band {
   position: absolute;
-  top: 31px;
   right: -1px;
+  bottom: 8%;
   left: -1px;
   z-index: 1;
   height: 8px;
-  background: #d98b32;
-  box-shadow: 0 1px 0 rgba(121, 71, 14, 0.18);
+  background: #9fd8c5;
+  box-shadow: 0 1px 0 rgba(47, 118, 94, 0.18);
   pointer-events: none;
+}
+
+.calendar-cell.long-break-day .calendar-work-time,
+.calendar-cell.long-break-day .today-label {
+  bottom: 24px;
 }
 
 .long-break-band.range-start {
@@ -173,19 +178,11 @@
 
 .long-break-item {
   position: relative;
-  padding: 20px 22px 18px 28px;
+  padding: 20px 22px 18px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #fff;
-}
-
-.long-break-item::before {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 7px;
-  background: #d98b32;
-  content: "";
 }
 
 .long-break-item-header {
@@ -204,16 +201,6 @@
   color: var(--green-deep);
   font-size: 0.82rem;
   font-weight: 800;
-}
-
-.long-break-memo {
-  margin-top: 14px !important;
-  padding-top: 13px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.84rem;
-  line-height: 1.7;
-  white-space: pre-wrap;
 }
 
 .long-break-item-actions {
@@ -298,10 +285,31 @@
 }
 
 .long-break-close-button {
+  position: relative;
   width: 42px;
   padding: 0;
+  border-radius: 50%;
   color: var(--muted);
-  font-size: 1.45rem;
+}
+
+.long-break-close-button::before,
+.long-break-close-button::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.long-break-close-button::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.long-break-close-button::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .long-break-form {
@@ -350,8 +358,12 @@
   }
 
   .long-break-band {
-    top: 4px;
     height: 6px;
+  }
+
+  .calendar-cell.long-break-day .calendar-work-time,
+  .calendar-cell.long-break-day .today-label {
+    bottom: 14px;
   }
 
   .long-break-card,
