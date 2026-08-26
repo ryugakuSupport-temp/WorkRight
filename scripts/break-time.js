@@ -146,8 +146,19 @@
     };
   }
 
+  function sortBreaksByStartTime(breaks) {
+    return [...breaks].sort((left, right) =>
+      left.startTime < right.startTime
+        ? -1
+        : left.startTime > right.startTime
+          ? 1
+          : 0,
+    );
+  }
+
   window.ShiftBreakTime = Object.freeze({
     MAX_BREAKS,
     calculateShiftTime,
+    sortBreaksByStartTime,
   });
 })();

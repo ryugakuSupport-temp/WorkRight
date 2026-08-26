@@ -579,7 +579,7 @@ textarea {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--brand-soft);
+  background: #fff;
 }
 
 .break-time-row-header {
@@ -587,6 +587,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  min-height: 32px;
 }
 
 .break-time-row-title {
@@ -622,10 +623,11 @@ textarea {
 .remove-break-button {
   display: inline-grid;
   place-items: center;
-  width: 44px;
+  width: 32px;
+  min-height: 32px;
   padding: 0;
   border-radius: 50%;
-  font-size: 1.25rem;
+  font-size: 1rem;
   line-height: 1;
 }
 
