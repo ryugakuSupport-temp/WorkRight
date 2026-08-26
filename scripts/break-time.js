@@ -146,19 +146,28 @@
     };
   }
 
-  function sortBreaksByStartTime(breaks) {
-    return [...breaks].sort((left, right) =>
-      left.startTime < right.startTime
-        ? -1
-        : left.startTime > right.startTime
-          ? 1
-          : 0,
+  function sortBreaksByShiftStart(breaks, shiftStartTime) {
+    const shiftStartMinute = parseTime(shiftStartTime);
+
+    function getMinutesFromShiftStart(breakStartTime) {
+      const breakStartMinute = parseTime(breakStartTime);
+      return (
+        breakStartMinute -
+        shiftStartMinute +
+        (breakStartMinute < shiftStartMinute ? MINUTES_PER_DAY : 0)
+      );
+    }
+
+    return [...breaks].sort(
+      (left, right) =>
+        getMinutesFromShiftStart(left.startTime) -
+        getMinutesFromShiftStart(right.startTime),
     );
   }
 
   window.ShiftBreakTime = Object.freeze({
     MAX_BREAKS,
     calculateShiftTime,
-    sortBreaksByStartTime,
+    sortBreaksByShiftStart,
   });
 })();

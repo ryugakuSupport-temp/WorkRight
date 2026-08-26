@@ -100,19 +100,19 @@ const breakTime = global.window.ShiftBreakTime;
 
 {
   const breaks = [
-    { startTime: "01:00", endTime: "01:15" },
-    { startTime: "00:00", endTime: "00:30" },
-    { startTime: "03:00", endTime: "03:15" },
+    { startTime: "00:47", endTime: "01:00" },
+    { startTime: "23:00", endTime: "23:10" },
+    { startTime: "00:01", endTime: "00:05" },
   ];
-  const sorted = breakTime.sortBreaksByStartTime(breaks);
+  const sorted = breakTime.sortBreaksByShiftStart(breaks, "22:00");
 
   assert.deepEqual(
     sorted.map((breakValue) => breakValue.startTime),
-    ["00:00", "01:00", "03:00"],
+    ["23:00", "00:01", "00:47"],
   );
   assert.deepEqual(
     breaks.map((breakValue) => breakValue.startTime),
-    ["01:00", "00:00", "03:00"],
+    ["00:47", "23:00", "00:01"],
   );
 }
 

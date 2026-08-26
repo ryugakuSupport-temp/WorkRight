@@ -1430,7 +1430,9 @@
     shiftForm.elements.namedItem("jobName").value = shift.jobName;
     setBaseTimeInputValue("startTime", shift.startTime);
     setBaseTimeInputValue("endTime", shift.endTime);
-    renderBreakFields(breakTime.sortBreaksByStartTime(shift.breaks));
+    renderBreakFields(
+      breakTime.sortBreaksByShiftStart(shift.breaks, shift.startTime),
+    );
     shiftForm.elements.namedItem("hourlyWage").value =
       shift.hourlyWage === 0 ? "" : String(shift.hourlyWage);
     setFormMessage("");
