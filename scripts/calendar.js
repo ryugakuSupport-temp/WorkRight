@@ -445,6 +445,13 @@
 
   function normalizeTimeSegmentInput(input) {
     input.value = input.value.replace(/\D/g, "").slice(0, 2);
+    const maxFirstDigit =
+      input.dataset.timeSegment === "hour" ? 2 : 5;
+
+    if (input.value !== "" && Number(input.value[0]) > maxFirstDigit) {
+      input.value = `0${input.value[0]}`;
+    }
+
     input.setCustomValidity("");
 
     if (input.value.length !== 2) return;
