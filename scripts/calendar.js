@@ -10,6 +10,7 @@
   const language = window.ShiftLanguage;
   const storage = window.ShiftStorage;
   const workLimit = window.ShiftWorkLimit;
+  const breakTime = window.ShiftBreakTime;
 
   const monthHeading = document.getElementById("calendar-month-heading");
   const monthlyEstimatedPay = document.getElementById("monthly-estimated-pay");
@@ -38,7 +39,7 @@
   const shiftSubmitButton = document.getElementById("shift-submit-button");
   const cancelEditButton = document.getElementById("cancel-edit");
   const jobNameInput = document.getElementById("job-name");
-  const timeInputGroups = Object.freeze({
+  const baseTimeInputGroups = Object.freeze({
     startTime: Object.freeze({
       hour: document.getElementById("start-time-hour"),
       minute: document.getElementById("start-time-minute"),
@@ -49,34 +50,11 @@
       minute: document.getElementById("end-time-minute"),
       required: true,
     }),
-    breakStartTime: Object.freeze({
-      hour: document.getElementById("break-start-time-hour"),
-      minute: document.getElementById("break-start-time-minute"),
-      required: false,
-    }),
-    breakEndTime: Object.freeze({
-      hour: document.getElementById("break-end-time-hour"),
-      minute: document.getElementById("break-end-time-minute"),
-      required: false,
-    }),
-    break2StartTime: Object.freeze({
-      hour: document.getElementById("break2-start-time-hour"),
-      minute: document.getElementById("break2-start-time-minute"),
-      required: false,
-    }),
-    break2EndTime: Object.freeze({
-      hour: document.getElementById("break2-end-time-hour"),
-      minute: document.getElementById("break2-end-time-minute"),
-      required: false,
-    }),
   });
-  const timeSegmentInputs = Object.values(timeInputGroups).flatMap((group) => [
-    group.hour,
-    group.minute,
-  ]);
-  const breakTimeSegmentInputs = timeSegmentInputs.slice(4);
+  const breakListFields = document.getElementById("break-list-fields");
+  const addBreakButton = document.getElementById("add-break");
   const hourlyWageInput = shiftForm.elements.namedItem("hourlyWage");
-  const shiftValidatedInputs = [...timeSegmentInputs, hourlyWageInput];
+  const breakNumerals = Object.freeze(["①", "②", "③", "④", "⑤"]);
   const formMessage = document.getElementById("form-message");
   const shiftList = document.getElementById("shift-list");
   const dailyLimitWarning = document.getElementById("daily-limit-warning");
@@ -162,9 +140,54 @@
     return language.getCurrentLanguage().locale;
   }
 
+  function getBreakRows() {
+    return Array.from(
+      breakListFields.querySelectorAll(".break-time-row"),
+    );
+  }
+
+  function getBreakTimeGroups(row) {
+    return {
+      start: {
+        hour: row.querySelector('[data-break-field="start"][data-time-segment="hour"]'),
+        minute: row.querySelector(
+          '[data-break-field="start"][data-time-segment="minute"]',
+        ),
+        required: false,
+      },
+      end: {
+        hour: row.querySelector('[data-break-field="end"][data-time-segment="hour"]'),
+        minute: row.querySelector(
+          '[data-break-field="end"][data-time-segment="minute"]',
+        ),
+        required: false,
+      },
+    };
+  }
+
+  function getAllTimeInputGroups() {
+    return [
+      ...Object.values(baseTimeInputGroups),
+      ...getBreakRows().flatMap((row) =>
+        Object.values(getBreakTimeGroups(row)),
+      ),
+    ];
+  }
+
+  function getAllTimeSegmentInputs() {
+    return getAllTimeInputGroups().flatMap((group) => [
+      group.hour,
+      group.minute,
+    ]);
+  }
+
+  function getShiftValidatedInputs() {
+    return [...getAllTimeSegmentInputs(), hourlyWageInput];
+  }
+
   function getTimeInputGroupForSegment(input) {
     return (
-      Object.values(timeInputGroups).find(
+      getAllTimeInputGroups().find(
         (group) => group.hour === input || group.minute === input,
       ) ?? null
     );
@@ -215,25 +238,209 @@
 
   function applyShiftFieldValidityMessages() {
     clearShiftFieldValidityMessages();
-    Object.values(timeInputGroups).forEach(updateTimeGroupValidity);
+    getAllTimeInputGroups().forEach(updateTimeGroupValidity);
     updateShiftFieldValidity(hourlyWageInput);
   }
 
   function clearShiftFieldValidityMessages() {
-    shiftValidatedInputs.forEach((input) => input.setCustomValidity(""));
+    getShiftValidatedInputs().forEach((input) => input.setCustomValidity(""));
   }
 
-  function getTimeInputValue(groupName) {
-    const group = timeInputGroups[groupName];
+  function getTimeGroupValue(group) {
     if (group.hour.value === "" && group.minute.value === "") return "";
     return group.hour.value + ":" + group.minute.value;
   }
 
-  function setTimeInputValue(groupName, time) {
-    const group = timeInputGroups[groupName];
+  function setTimeGroupValue(group, time) {
     const [hour = "", minute = ""] = time === "" ? [] : time.split(":");
     group.hour.value = hour;
     group.minute.value = minute;
+  }
+
+  function getBaseTimeInputValue(groupName) {
+    return getTimeGroupValue(baseTimeInputGroups[groupName]);
+  }
+
+  function setBaseTimeInputValue(groupName, time) {
+    setTimeGroupValue(baseTimeInputGroups[groupName], time);
+  }
+
+  function getBreakTimeValues() {
+    return getBreakRows().map((row) => {
+      const groups = getBreakTimeGroups(row);
+      return {
+        startTime: getTimeGroupValue(groups.start),
+        endTime: getTimeGroupValue(groups.end),
+      };
+    });
+  }
+
+  function createBreakTimeInput(segment, fieldName) {
+    const input = document.createElement("input");
+    input.className = "time-segment-input";
+    input.dataset.timeSegment = segment;
+    input.dataset.breakField = fieldName;
+    input.type = "text";
+    input.inputMode = "numeric";
+    input.maxLength = 2;
+    input.pattern = "[0-9]{2}";
+    input.placeholder = "00";
+    input.autocomplete = "off";
+    input.setAttribute(
+      "aria-label",
+      translate(segment === "hour" ? "time.hour" : "time.minute"),
+    );
+    return input;
+  }
+
+  function createBreakTimeField(fieldName, rowNumber) {
+    const field = document.createElement("div");
+    const label = document.createElement("span");
+    const inputGroup = document.createElement("div");
+    const hourInput = createBreakTimeInput("hour", fieldName);
+    const separator = document.createElement("span");
+    const minuteInput = createBreakTimeInput("minute", fieldName);
+    const labelId = `break-${rowNumber}-${fieldName}-time-label`;
+
+    field.className = "form-field";
+    label.id = labelId;
+    label.className = `break-${fieldName}-label`;
+    inputGroup.className = "segmented-time-input";
+    inputGroup.setAttribute("role", "group");
+    inputGroup.setAttribute("aria-labelledby", labelId);
+    separator.className = "time-separator";
+    separator.setAttribute("aria-hidden", "true");
+    separator.textContent = ":";
+    inputGroup.append(hourInput, separator, minuteInput);
+    field.append(label, inputGroup);
+    return field;
+  }
+
+  function updateBreakRowLabels(row, index) {
+    const numeral = breakNumerals[index];
+    row.querySelector(".break-time-row-title").textContent = translate(
+      "shift.form.breakNumber",
+      { number: numeral },
+    );
+    row.querySelector(".break-start-label").textContent = translate(
+      "shift.form.breakStartShort",
+    );
+    row.querySelector(".break-end-label").textContent = translate(
+      "shift.form.breakEndShort",
+    );
+    row.querySelectorAll('[data-time-segment="hour"]').forEach((input) => {
+      input.setAttribute("aria-label", translate("time.hour"));
+    });
+    row.querySelectorAll('[data-time-segment="minute"]').forEach((input) => {
+      input.setAttribute("aria-label", translate("time.minute"));
+    });
+
+    const removeButton = row.querySelector(".remove-break-button");
+    if (removeButton !== null) {
+      removeButton.setAttribute(
+        "aria-label",
+        translate("shift.form.removeBreak", { number: numeral }),
+      );
+    }
+  }
+
+  function updateAllBreakRowLabels() {
+    getBreakRows().forEach(updateBreakRowLabels);
+  }
+
+  function createBreakRow(breakValue, index) {
+    const row = document.createElement("div");
+    const header = document.createElement("header");
+    const title = document.createElement("strong");
+    const timeFields = document.createElement("div");
+    const rowNumber = index + 1;
+
+    row.className = "break-time-row";
+    row.dataset.breakIndex = String(index);
+    header.className = "break-time-row-header";
+    title.className = "break-time-row-title";
+    timeFields.className = "break-time-inputs";
+    timeFields.append(
+      createBreakTimeField("start", rowNumber),
+      createBreakTimeField("end", rowNumber),
+    );
+    header.appendChild(title);
+
+    if (index > 0) {
+      const removeButton = document.createElement("button");
+      removeButton.className = "remove-break-button";
+      removeButton.type = "button";
+      removeButton.textContent = "−";
+      header.appendChild(removeButton);
+    }
+
+    row.append(header, timeFields);
+    updateBreakRowLabels(row, index);
+    const groups = getBreakTimeGroups(row);
+    setTimeGroupValue(groups.start, breakValue.startTime);
+    setTimeGroupValue(groups.end, breakValue.endTime);
+    return row;
+  }
+
+  function updateBreakControls() {
+    addBreakButton.hidden =
+      getBreakRows().length >= breakTime.MAX_BREAKS;
+  }
+
+  function renderBreakFields(breakValues = [], focusLast = false) {
+    const values =
+      breakValues.length === 0
+        ? [{ startTime: "", endTime: "" }]
+        : breakValues.slice(0, breakTime.MAX_BREAKS);
+    const fragment = document.createDocumentFragment();
+
+    values.forEach((breakValue, index) => {
+      fragment.appendChild(createBreakRow(breakValue, index));
+    });
+
+    breakListFields.replaceChildren(fragment);
+    updateBreakControls();
+
+    if (focusLast) {
+      const rows = getBreakRows();
+      const lastRow = rows[rows.length - 1];
+      getBreakTimeGroups(lastRow).start.hour.focus();
+    }
+  }
+
+  function addBreakField() {
+    const values = getBreakTimeValues();
+    if (values.length >= breakTime.MAX_BREAKS) return;
+
+    values.push({ startTime: "", endTime: "" });
+    renderBreakFields(values, true);
+  }
+
+  function removeBreakField(index) {
+    const values = getBreakTimeValues();
+    if (index <= 0 || index >= values.length) return;
+
+    values.splice(index, 1);
+    renderBreakFields(values);
+    const nextRow = getBreakRows()[Math.min(index, values.length - 1)];
+    nextRow?.querySelector(".remove-break-button")?.focus();
+    if (nextRow === undefined || index >= values.length) addBreakButton.focus();
+  }
+
+  function getBreakErrorInput(error) {
+    const row = getBreakRows()[error.breakIndex] ?? getBreakRows()[0];
+    if (!row) return null;
+    return getBreakTimeGroups(row)[error.field].hour;
+  }
+
+  function getBreakErrorTranslationKey(errorCode) {
+    const keys = {
+      pair: "shift.validation.breakPair",
+      range: "shift.validation.breakRange",
+      overlap: "shift.validation.breakOverlap",
+      limit: "shift.validation.breakLimit",
+    };
+    return keys[errorCode];
   }
 
   function normalizeTimeSegmentInput(input) {
@@ -242,6 +449,7 @@
 
     if (input.value.length !== 2) return;
 
+    const timeSegmentInputs = getAllTimeSegmentInputs();
     const currentIndex = timeSegmentInputs.indexOf(input);
     const nextInput =
       timeSegmentInputs[currentIndex + 1] ?? hourlyWageInput;
@@ -371,138 +579,6 @@
     );
   }
 
-  function calculateBreakInterval(
-    startTime,
-    endTime,
-    shiftStartMinute,
-    shiftEndMinute,
-    isOvernight,
-    startGroupName,
-    endGroupName,
-  ) {
-    const hasStart = startTime !== "";
-    const hasEnd = endTime !== "";
-
-    if (hasStart !== hasEnd) {
-      return {
-        errorMessage: translate("shift.validation.breakPair"),
-        errorInput: timeInputGroups[
-          hasStart ? endGroupName : startGroupName
-        ].hour,
-      };
-    }
-
-    if (!hasStart) return { interval: null };
-
-    let startMinute = parseTime(startTime);
-    let endMinute = parseTime(endTime);
-
-    if (isOvernight && startMinute < shiftStartMinute) {
-      startMinute += MINUTES_PER_DAY;
-    }
-
-    if (isOvernight && endMinute < shiftStartMinute) {
-      endMinute += MINUTES_PER_DAY;
-    }
-
-    if (endMinute <= startMinute) {
-      endMinute += MINUTES_PER_DAY;
-    }
-
-    if (
-      startMinute < shiftStartMinute ||
-      endMinute > shiftEndMinute
-    ) {
-      return {
-        errorMessage: translate("shift.validation.breakRange"),
-        errorInput: timeInputGroups[startGroupName].hour,
-      };
-    }
-
-    return {
-      interval: {
-        startMinute,
-        endMinute,
-        minutes: endMinute - startMinute,
-      },
-    };
-  }
-
-  function calculateShiftTime(
-    startTime,
-    endTime,
-    breakStartTime,
-    breakEndTime,
-    break2StartTime = "",
-    break2EndTime = "",
-  ) {
-    const startMinutes = parseTime(startTime);
-    const endMinutes = parseTime(endTime);
-    const isOvernight = endMinutes <= startMinutes;
-    const shiftEndMinute =
-      endMinutes + (isOvernight ? MINUTES_PER_DAY : 0);
-    const elapsedMinutes = shiftEndMinute - startMinutes;
-    const firstBreak = calculateBreakInterval(
-      breakStartTime,
-      breakEndTime,
-      startMinutes,
-      shiftEndMinute,
-      isOvernight,
-      "breakStartTime",
-      "breakEndTime",
-    );
-
-    if (firstBreak.errorMessage) return firstBreak;
-
-    const secondBreak = calculateBreakInterval(
-      break2StartTime,
-      break2EndTime,
-      startMinutes,
-      shiftEndMinute,
-      isOvernight,
-      "break2StartTime",
-      "break2EndTime",
-    );
-
-    if (secondBreak.errorMessage) return secondBreak;
-
-    const breakIntervals = [
-      firstBreak.interval,
-      secondBreak.interval,
-    ].filter((interval) => interval !== null);
-
-    if (
-      breakIntervals.length === 2 &&
-      getIntervalOverlap(
-        breakIntervals[0].startMinute,
-        breakIntervals[0].endMinute,
-        breakIntervals[1].startMinute,
-        breakIntervals[1].endMinute,
-      ) > 0
-    ) {
-      return {
-        errorMessage: translate("shift.validation.breakOverlap"),
-        errorInput: timeInputGroups.break2StartTime.hour,
-      };
-    }
-
-    const breakMinutes = breakIntervals.reduce(
-      (total, interval) => total + interval.minutes,
-      0,
-    );
-
-    return {
-      elapsedMinutes,
-      actualMinutes: elapsedMinutes - breakMinutes,
-      isOvernight,
-      breakMinutes,
-      breakStartMinute: firstBreak.interval?.startMinute ?? null,
-      breakEndMinute: firstBreak.interval?.endMinute ?? null,
-      break2StartMinute: secondBreak.interval?.startMinute ?? null,
-      break2EndMinute: secondBreak.interval?.endMinute ?? null,
-    };
-  }
-
   function isValidStoredDate(value) {
     return (
       typeof value === "string" &&
@@ -522,15 +598,22 @@
   }
 
   function createStoredShift(dateKey, shift) {
+    const storedBreaks = shift.breaks.map(({ startTime, endTime }) => ({
+      startTime,
+      endTime,
+    }));
+    const firstBreak = storedBreaks[0] ?? { startTime: "", endTime: "" };
+    const secondBreak = storedBreaks[1] ?? { startTime: "", endTime: "" };
     const record = {
       date: dateKey,
       jobName: shift.jobName,
       startTime: shift.startTime,
       endTime: shift.endTime,
-      breakStartTime: shift.breakStartTime,
-      breakEndTime: shift.breakEndTime,
-      break2StartTime: shift.break2StartTime,
-      break2EndTime: shift.break2EndTime,
+      breaks: storedBreaks,
+      breakStartTime: firstBreak.startTime,
+      breakEndTime: firstBreak.endTime,
+      break2StartTime: secondBreak.startTime,
+      break2EndTime: secondBreak.endTime,
       hourlyWage: shift.hourlyWage,
       memo: shift.memo,
     };
@@ -539,11 +622,55 @@
     return record;
   }
 
+  function getStoredBreakTimes(record) {
+    if (record?.breaks !== undefined) {
+      if (
+        !Array.isArray(record.breaks) ||
+        record.breaks.length > breakTime.MAX_BREAKS
+      ) {
+        return null;
+      }
+
+      const storedBreaks = record.breaks.map((item) => ({
+        startTime: item?.startTime,
+        endTime: item?.endTime,
+      }));
+      const hasValidBreaks = storedBreaks.every(
+        (item) =>
+          isValidStoredTime(item.startTime) &&
+          isValidStoredTime(item.endTime),
+      );
+      return hasValidBreaks ? storedBreaks : null;
+    }
+
+    const legacyBreaks = [
+      {
+        startTime: record?.breakStartTime ?? "",
+        endTime: record?.breakEndTime ?? "",
+      },
+      {
+        startTime: record?.break2StartTime ?? "",
+        endTime: record?.break2EndTime ?? "",
+      },
+    ];
+
+    if (
+      !legacyBreaks.every(
+        (item) =>
+          isValidStoredTime(item.startTime, true) &&
+          isValidStoredTime(item.endTime, true),
+      )
+    ) {
+      return null;
+    }
+
+    return legacyBreaks.filter(
+      (item) => item.startTime !== "" || item.endTime !== "",
+    );
+  }
+
   function restoreStoredShift(record) {
-    const break2StartTime =
-      record?.break2StartTime === undefined ? "" : record.break2StartTime;
-    const break2EndTime =
-      record?.break2EndTime === undefined ? "" : record.break2EndTime;
+    const storedBreaks = getStoredBreakTimes(record);
     const hasValidValues =
       record !== null &&
       typeof record === "object" &&
@@ -553,26 +680,20 @@
       typeof record.jobName === "string" &&
       isValidStoredTime(record.startTime) &&
       isValidStoredTime(record.endTime) &&
-      isValidStoredTime(record.breakStartTime, true) &&
-      isValidStoredTime(record.breakEndTime, true) &&
-      isValidStoredTime(break2StartTime, true) &&
-      isValidStoredTime(break2EndTime, true) &&
+      storedBreaks !== null &&
       Number.isSafeInteger(record.hourlyWage) &&
       record.hourlyWage >= 0 &&
       typeof record.memo === "string";
 
     if (!hasValidValues) throw new Error("Stored shift data is invalid.");
 
-    const calculatedTime = calculateShiftTime(
+    const calculatedTime = breakTime.calculateShiftTime(
       record.startTime,
       record.endTime,
-      record.breakStartTime,
-      record.breakEndTime,
-      break2StartTime,
-      break2EndTime,
+      storedBreaks,
     );
 
-    if (calculatedTime.errorMessage) {
+    if (calculatedTime.error) {
       throw new Error("Stored shift time is invalid.");
     }
 
@@ -583,15 +704,8 @@
         jobName: record.jobName,
         startTime: record.startTime,
         endTime: record.endTime,
-        breakStartTime: record.breakStartTime,
-        breakEndTime: record.breakEndTime,
-        break2StartTime,
-        break2EndTime,
+        breaks: calculatedTime.breaks,
         breakMinutes: calculatedTime.breakMinutes,
-        breakStartMinute: calculatedTime.breakStartMinute,
-        breakEndMinute: calculatedTime.breakEndMinute,
-        break2StartMinute: calculatedTime.break2StartMinute,
-        break2EndMinute: calculatedTime.break2EndMinute,
         hourlyWage: record.hourlyWage,
         memo: record.memo,
         actualMinutes: calculatedTime.actualMinutes,
@@ -671,18 +785,13 @@
     const shiftStartMinute = parseTime(shift.startTime);
     const shiftEndMinute =
       parseTime(shift.endTime) + (shift.isOvernight ? MINUTES_PER_DAY : 0);
-    const breakNightMinutes = [
-      [shift.breakStartMinute, shift.breakEndMinute],
-      [shift.break2StartMinute, shift.break2EndMinute],
-    ].reduce(
-      (total, [breakStartMinute, breakEndMinute]) =>
-        breakStartMinute === null || breakStartMinute === undefined
-          ? total
-          : total +
-            getNightMinutesWithinInterval(
-              breakStartMinute,
-              breakEndMinute,
-            ),
+    const breakNightMinutes = shift.breaks.reduce(
+      (total, breakValue) =>
+        total +
+        getNightMinutesWithinInterval(
+          breakValue.startMinute,
+          breakValue.endMinute,
+        ),
       0,
     );
     const nightMinutes = Math.max(
@@ -1298,6 +1407,7 @@
   function resetFormMode() {
     editingShiftId = null;
     shiftForm.reset();
+    renderBreakFields();
     clearShiftFieldValidityMessages();
     shiftFormHeading.textContent = translate("shift.form.addTitle");
     shiftSubmitButton.textContent = translate("shift.form.addTitle");
@@ -1318,12 +1428,9 @@
     cancelEditButton.hidden = false;
     shiftFields.disabled = false;
     shiftForm.elements.namedItem("jobName").value = shift.jobName;
-    setTimeInputValue("startTime", shift.startTime);
-    setTimeInputValue("endTime", shift.endTime);
-    setTimeInputValue("breakStartTime", shift.breakStartTime);
-    setTimeInputValue("breakEndTime", shift.breakEndTime);
-    setTimeInputValue("break2StartTime", shift.break2StartTime);
-    setTimeInputValue("break2EndTime", shift.break2EndTime);
+    setBaseTimeInputValue("startTime", shift.startTime);
+    setBaseTimeInputValue("endTime", shift.endTime);
+    renderBreakFields(shift.breaks);
     shiftForm.elements.namedItem("hourlyWage").value =
       shift.hourlyWage === 0 ? "" : String(shift.hourlyWage);
     setFormMessage("");
@@ -1743,25 +1850,29 @@
     const formData = new FormData(shiftForm);
     const jobName = String(formData.get("jobName")).trim();
 
-    const startTime = getTimeInputValue("startTime");
-    const endTime = getTimeInputValue("endTime");
-    const breakStartTime = getTimeInputValue("breakStartTime");
-    const breakEndTime = getTimeInputValue("breakEndTime");
-    const break2StartTime = getTimeInputValue("break2StartTime");
-    const break2EndTime = getTimeInputValue("break2EndTime");
+    const startTime = getBaseTimeInputValue("startTime");
+    const endTime = getBaseTimeInputValue("endTime");
+    const breakValues = getBreakTimeValues();
     const hourlyWageText = String(formData.get("hourlyWage")).trim();
-    const calculatedTime = calculateShiftTime(
+    const calculatedTime = breakTime.calculateShiftTime(
       startTime,
       endTime,
-      breakStartTime,
-      breakEndTime,
-      break2StartTime,
-      break2EndTime,
+      breakValues,
     );
 
-    if (calculatedTime.errorMessage) {
-      calculatedTime.errorInput.setCustomValidity(calculatedTime.errorMessage);
-      calculatedTime.errorInput.reportValidity();
+    if (calculatedTime.error) {
+      const errorInput = getBreakErrorInput(calculatedTime.error);
+      const errorMessage = translate(
+        getBreakErrorTranslationKey(calculatedTime.error.code),
+        { limit: breakTime.MAX_BREAKS },
+      );
+
+      if (errorInput === null) {
+        setFormMessage(errorMessage, "error");
+      } else {
+        errorInput.setCustomValidity(errorMessage);
+        errorInput.reportValidity();
+      }
       return;
     }
 
@@ -1770,15 +1881,8 @@
       jobName,
       startTime,
       endTime,
-      breakStartTime,
-      breakEndTime,
-      break2StartTime,
-      break2EndTime,
+      breaks: calculatedTime.breaks,
       breakMinutes: calculatedTime.breakMinutes,
-      breakStartMinute: calculatedTime.breakStartMinute,
-      breakEndMinute: calculatedTime.breakEndMinute,
-      break2StartMinute: calculatedTime.break2StartMinute,
-      break2EndMinute: calculatedTime.break2EndMinute,
       hourlyWage: hourlyWageText === "" ? 0 : Number(hourlyWageText),
       memo: "",
       actualMinutes: calculatedTime.actualMinutes,
@@ -1871,29 +1975,66 @@
     }
   }
 
-  shiftValidatedInputs.forEach((input) => {
-    input.addEventListener("invalid", () => updateShiftFieldValidity(input));
+  renderBreakFields();
 
-    ["input", "change"].forEach((eventName) => {
-      input.addEventListener(eventName, () => input.setCustomValidity(""));
-    });
+  shiftForm.addEventListener(
+    "invalid",
+    (event) => {
+      if (event.target instanceof HTMLInputElement) {
+        updateShiftFieldValidity(event.target);
+      }
+    },
+    true,
+  );
+
+  shiftForm.addEventListener("input", (event) => {
+    if (!(event.target instanceof HTMLInputElement)) return;
+
+    const input = event.target;
+    if (input.classList.contains("time-segment-input")) {
+      normalizeTimeSegmentInput(input);
+
+      if (input.closest(".break-time-row") !== null) {
+        breakListFields
+          .querySelectorAll(".time-segment-input")
+          .forEach((breakInput) => breakInput.setCustomValidity(""));
+      }
+      return;
+    }
+
+    if (input === hourlyWageInput) input.setCustomValidity("");
   });
 
-  timeSegmentInputs.forEach((input) => {
-    input.addEventListener("input", () => normalizeTimeSegmentInput(input));
-    input.addEventListener("keydown", (event) => {
-      if (event.key !== "Backspace" || input.value !== "") return;
-      const currentIndex = timeSegmentInputs.indexOf(input);
-      timeSegmentInputs[currentIndex - 1]?.focus();
-    });
+  shiftForm.addEventListener("change", (event) => {
+    if (event.target instanceof HTMLInputElement) {
+      event.target.setCustomValidity("");
+    }
   });
 
-  breakTimeSegmentInputs.forEach((input) => {
-    input.addEventListener("input", () => {
-      breakTimeSegmentInputs.forEach((breakInput) =>
-        breakInput.setCustomValidity(""),
-      );
-    });
+  shiftForm.addEventListener("keydown", (event) => {
+    const input = event.target;
+    if (
+      !(input instanceof HTMLInputElement) ||
+      !input.classList.contains("time-segment-input") ||
+      event.key !== "Backspace" ||
+      input.value !== ""
+    ) {
+      return;
+    }
+
+    const timeSegmentInputs = getAllTimeSegmentInputs();
+    const currentIndex = timeSegmentInputs.indexOf(input);
+    timeSegmentInputs[currentIndex - 1]?.focus();
+  });
+
+  addBreakButton.addEventListener("click", addBreakField);
+  breakListFields.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const removeButton = event.target.closest(".remove-break-button");
+    if (removeButton === null) return;
+
+    const row = removeButton.closest(".break-time-row");
+    removeBreakField(Number(row.dataset.breakIndex));
   });
 
   cancelEditButton.addEventListener("click", () => {
@@ -1961,6 +2102,7 @@
 
   document.addEventListener("shiftlanguagechange", () => {
     clearShiftFieldValidityMessages();
+    updateAllBreakRowLabels();
     clearLongBreakFieldValidityMessages();
     renderCalendar();
     renderLongBreakList();

@@ -567,6 +567,91 @@ textarea {
   font-weight: 800;
 }
 
+.break-fields,
+.break-list-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.break-time-row {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--brand-soft);
+}
+
+.break-time-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.break-time-row-title {
+  font-size: 0.82rem;
+}
+
+.break-time-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.add-break-button,
+.remove-break-button {
+  min-height: 44px;
+  border: 1px solid #b9c8c1;
+  color: var(--green-deep);
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.add-break-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  justify-self: start;
+  padding: 0 14px;
+  border-radius: 10px;
+}
+
+.remove-break-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.add-break-button:hover,
+.add-break-button:focus-visible,
+.remove-break-button:hover,
+.remove-break-button:focus-visible {
+  border-color: var(--green);
+  background: #fff;
+}
+
+.add-break-button:focus-visible,
+.remove-break-button:focus-visible {
+  outline: 3px solid rgba(23, 75, 99, 0.24);
+  outline-offset: 2px;
+}
+
+.add-break-button[hidden] {
+  display: none;
+}
+
+.add-break-button:disabled,
+.remove-break-button:disabled {
+  cursor: not-allowed;
+}
+
 .save-shift-button {
   width: 100%;
   min-height: 48px;
@@ -856,6 +941,10 @@ textarea {
 
   .form-field-wide {
     grid-column: auto;
+  }
+
+  .break-time-inputs {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -28,6 +28,7 @@
     <script src="./scripts/storage.js" defer></script>
     <script src="./lang/language.js" defer></script>
     <script src="./scripts/work-limit.js" defer></script>
+    <script src="./scripts/break-time.js" defer></script>
     <script src="./scripts/calendar.js" defer></script>
   </head>
   <body>
@@ -392,40 +393,12 @@
                     </div>
                   </div>
 
-                  <div class="form-field">
-                    <span id="break-start-time-label" data-i18n="shift.form.breakStart">休憩①開始時刻</span>
-                    <div class="segmented-time-input" role="group" aria-labelledby="break-start-time-label">
-                      <input id="break-start-time-hour" class="time-segment-input" data-time-segment="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" aria-label="時" data-i18n-aria-label="time.hour">
-                      <span class="time-separator" aria-hidden="true">:</span>
-                      <input id="break-start-time-minute" class="time-segment-input" data-time-segment="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" aria-label="分" data-i18n-aria-label="time.minute">
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <span id="break-end-time-label" data-i18n="shift.form.breakEnd">休憩①終了時刻</span>
-                    <div class="segmented-time-input" role="group" aria-labelledby="break-end-time-label">
-                      <input id="break-end-time-hour" class="time-segment-input" data-time-segment="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" aria-label="時" data-i18n-aria-label="time.hour">
-                      <span class="time-separator" aria-hidden="true">:</span>
-                      <input id="break-end-time-minute" class="time-segment-input" data-time-segment="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" aria-label="分" data-i18n-aria-label="time.minute">
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <span id="break2-start-time-label" data-i18n="shift.form.break2Start">休憩②開始時刻</span>
-                    <div class="segmented-time-input" role="group" aria-labelledby="break2-start-time-label">
-                      <input id="break2-start-time-hour" class="time-segment-input" data-time-segment="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" aria-label="時" data-i18n-aria-label="time.hour">
-                      <span class="time-separator" aria-hidden="true">:</span>
-                      <input id="break2-start-time-minute" class="time-segment-input" data-time-segment="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" aria-label="分" data-i18n-aria-label="time.minute">
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <span id="break2-end-time-label" data-i18n="shift.form.break2End">休憩②終了時刻</span>
-                    <div class="segmented-time-input" role="group" aria-labelledby="break2-end-time-label">
-                      <input id="break2-end-time-hour" class="time-segment-input" data-time-segment="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" aria-label="時" data-i18n-aria-label="time.hour">
-                      <span class="time-separator" aria-hidden="true">:</span>
-                      <input id="break2-end-time-minute" class="time-segment-input" data-time-segment="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" aria-label="分" data-i18n-aria-label="time.minute">
-                    </div>
+                  <div class="break-fields form-field-wide">
+                    <div id="break-list-fields" class="break-list-fields"></div>
+                    <button id="add-break" class="add-break-button" type="button">
+                      <span aria-hidden="true">＋</span>
+                      <span data-i18n="shift.form.addBreak">休憩を追加</span>
+                    </button>
                   </div>
 
                   <p class="form-hint form-field-wide" data-i18n="shift.form.breakHint">
