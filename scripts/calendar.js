@@ -38,18 +38,45 @@
   const shiftSubmitButton = document.getElementById("shift-submit-button");
   const cancelEditButton = document.getElementById("cancel-edit");
   const jobNameInput = document.getElementById("job-name");
-  const startTimeInput = shiftForm.elements.namedItem("startTime");
-  const endTimeInput = shiftForm.elements.namedItem("endTime");
-  const breakStartInput = document.getElementById("break-start-time");
-  const breakEndInput = document.getElementById("break-end-time");
+  const timeInputGroups = Object.freeze({
+    startTime: Object.freeze({
+      hour: document.getElementById("start-time-hour"),
+      minute: document.getElementById("start-time-minute"),
+      required: true,
+    }),
+    endTime: Object.freeze({
+      hour: document.getElementById("end-time-hour"),
+      minute: document.getElementById("end-time-minute"),
+      required: true,
+    }),
+    breakStartTime: Object.freeze({
+      hour: document.getElementById("break-start-time-hour"),
+      minute: document.getElementById("break-start-time-minute"),
+      required: false,
+    }),
+    breakEndTime: Object.freeze({
+      hour: document.getElementById("break-end-time-hour"),
+      minute: document.getElementById("break-end-time-minute"),
+      required: false,
+    }),
+    break2StartTime: Object.freeze({
+      hour: document.getElementById("break2-start-time-hour"),
+      minute: document.getElementById("break2-start-time-minute"),
+      required: false,
+    }),
+    break2EndTime: Object.freeze({
+      hour: document.getElementById("break2-end-time-hour"),
+      minute: document.getElementById("break2-end-time-minute"),
+      required: false,
+    }),
+  });
+  const timeSegmentInputs = Object.values(timeInputGroups).flatMap((group) => [
+    group.hour,
+    group.minute,
+  ]);
+  const breakTimeSegmentInputs = timeSegmentInputs.slice(4);
   const hourlyWageInput = shiftForm.elements.namedItem("hourlyWage");
-  const shiftValidatedInputs = [
-    startTimeInput,
-    endTimeInput,
-    breakStartInput,
-    breakEndInput,
-    hourlyWageInput,
-  ];
+  const shiftValidatedInputs = [...timeSegmentInputs, hourlyWageInput];
   const formMessage = document.getElementById("form-message");
   const shiftList = document.getElementById("shift-list");
   const dailyLimitWarning = document.getElementById("daily-limit-warning");
@@ -135,9 +162,39 @@
     return language.getCurrentLanguage().locale;
   }
 
+  function getTimeInputGroupForSegment(input) {
+    return (
+      Object.values(timeInputGroups).find(
+        (group) => group.hour === input || group.minute === input,
+      ) ?? null
+    );
+  }
+
+  function isValidTimeSegment(input) {
+    if (!/^\d{2}$/.test(input.value)) return false;
+    const value = Number(input.value);
+    return input.dataset.timeSegment === "hour"
+      ? value >= 0 && value <= 23
+      : value >= 0 && value <= 59;
+  }
+
+  function updateTimeGroupValidity(group) {
+    const hasValue = group.hour.value !== "" || group.minute.value !== "";
+    if (!group.required && !hasValue) return;
+
+    [group.hour, group.minute].forEach((input) => {
+      if (input.value === "") {
+        input.setCustomValidity(translate("validation.required"));
+      } else if (!isValidTimeSegment(input)) {
+        input.setCustomValidity(translate("validation.timeInvalid"));
+      }
+    });
+  }
+
   function updateShiftFieldValidity(input) {
-    if (input.type === "time" && input.validity.badInput) {
-      input.setCustomValidity(translate("validation.timeInvalid"));
+    const timeGroup = getTimeInputGroupForSegment(input);
+    if (timeGroup !== null) {
+      updateTimeGroupValidity(timeGroup);
       return;
     }
 
@@ -157,11 +214,38 @@
   }
 
   function applyShiftFieldValidityMessages() {
-    shiftValidatedInputs.forEach(updateShiftFieldValidity);
+    clearShiftFieldValidityMessages();
+    Object.values(timeInputGroups).forEach(updateTimeGroupValidity);
+    updateShiftFieldValidity(hourlyWageInput);
   }
 
   function clearShiftFieldValidityMessages() {
     shiftValidatedInputs.forEach((input) => input.setCustomValidity(""));
+  }
+
+  function getTimeInputValue(groupName) {
+    const group = timeInputGroups[groupName];
+    if (group.hour.value === "" && group.minute.value === "") return "";
+    return group.hour.value + ":" + group.minute.value;
+  }
+
+  function setTimeInputValue(groupName, time) {
+    const group = timeInputGroups[groupName];
+    const [hour = "", minute = ""] = time === "" ? [] : time.split(":");
+    group.hour.value = hour;
+    group.minute.value = minute;
+  }
+
+  function normalizeTimeSegmentInput(input) {
+    input.value = input.value.replace(/\D/g, "").slice(0, 2);
+    input.setCustomValidity("");
+
+    if (input.value.length !== 2) return;
+
+    const currentIndex = timeSegmentInputs.indexOf(input);
+    const nextInput =
+      timeSegmentInputs[currentIndex + 1] ?? hourlyWageInput;
+    nextInput.focus();
   }
 
   function updateLongBreakFieldValidity(input) {
@@ -287,72 +371,135 @@
     );
   }
 
+  function calculateBreakInterval(
+    startTime,
+    endTime,
+    shiftStartMinute,
+    shiftEndMinute,
+    isOvernight,
+    startGroupName,
+    endGroupName,
+  ) {
+    const hasStart = startTime !== "";
+    const hasEnd = endTime !== "";
+
+    if (hasStart !== hasEnd) {
+      return {
+        errorMessage: translate("shift.validation.breakPair"),
+        errorInput: timeInputGroups[
+          hasStart ? endGroupName : startGroupName
+        ].hour,
+      };
+    }
+
+    if (!hasStart) return { interval: null };
+
+    let startMinute = parseTime(startTime);
+    let endMinute = parseTime(endTime);
+
+    if (isOvernight && startMinute < shiftStartMinute) {
+      startMinute += MINUTES_PER_DAY;
+    }
+
+    if (isOvernight && endMinute < shiftStartMinute) {
+      endMinute += MINUTES_PER_DAY;
+    }
+
+    if (endMinute <= startMinute) {
+      endMinute += MINUTES_PER_DAY;
+    }
+
+    if (
+      startMinute < shiftStartMinute ||
+      endMinute > shiftEndMinute
+    ) {
+      return {
+        errorMessage: translate("shift.validation.breakRange"),
+        errorInput: timeInputGroups[startGroupName].hour,
+      };
+    }
+
+    return {
+      interval: {
+        startMinute,
+        endMinute,
+        minutes: endMinute - startMinute,
+      },
+    };
+  }
+
   function calculateShiftTime(
     startTime,
     endTime,
     breakStartTime,
     breakEndTime,
+    break2StartTime = "",
+    break2EndTime = "",
   ) {
     const startMinutes = parseTime(startTime);
     const endMinutes = parseTime(endTime);
     const isOvernight = endMinutes <= startMinutes;
-    const shiftEndMinute = endMinutes + (isOvernight ? 24 * 60 : 0);
+    const shiftEndMinute =
+      endMinutes + (isOvernight ? MINUTES_PER_DAY : 0);
     const elapsedMinutes = shiftEndMinute - startMinutes;
-    const hasBreakStart = breakStartTime !== "";
-    const hasBreakEnd = breakEndTime !== "";
+    const firstBreak = calculateBreakInterval(
+      breakStartTime,
+      breakEndTime,
+      startMinutes,
+      shiftEndMinute,
+      isOvernight,
+      "breakStartTime",
+      "breakEndTime",
+    );
 
-    if (hasBreakStart !== hasBreakEnd) {
-      return {
-        errorMessage: translate("shift.validation.breakPair"),
-        errorInput: hasBreakStart ? breakEndInput : breakStartInput,
-      };
-    }
+    if (firstBreak.errorMessage) return firstBreak;
 
-    if (!hasBreakStart) {
-      return {
-        elapsedMinutes,
-        actualMinutes: elapsedMinutes,
-        isOvernight,
-        breakMinutes: 0,
-        breakStartMinute: null,
-        breakEndMinute: null,
-      };
-    }
+    const secondBreak = calculateBreakInterval(
+      break2StartTime,
+      break2EndTime,
+      startMinutes,
+      shiftEndMinute,
+      isOvernight,
+      "break2StartTime",
+      "break2EndTime",
+    );
 
-    let breakStartMinute = parseTime(breakStartTime);
-    let breakEndMinute = parseTime(breakEndTime);
+    if (secondBreak.errorMessage) return secondBreak;
 
-    if (isOvernight && breakStartMinute < startMinutes) {
-      breakStartMinute += 24 * 60;
-    }
-
-    if (isOvernight && breakEndMinute < startMinutes) {
-      breakEndMinute += 24 * 60;
-    }
-
-    if (breakEndMinute <= breakStartMinute) {
-      breakEndMinute += 24 * 60;
-    }
+    const breakIntervals = [
+      firstBreak.interval,
+      secondBreak.interval,
+    ].filter((interval) => interval !== null);
 
     if (
-      breakStartMinute < startMinutes ||
-      breakEndMinute > shiftEndMinute
+      breakIntervals.length === 2 &&
+      getIntervalOverlap(
+        breakIntervals[0].startMinute,
+        breakIntervals[0].endMinute,
+        breakIntervals[1].startMinute,
+        breakIntervals[1].endMinute,
+      ) > 0
     ) {
       return {
-        errorMessage: translate("shift.validation.breakRange"),
-        errorInput: breakStartInput,
+        errorMessage: translate("shift.validation.breakOverlap"),
+        errorInput: timeInputGroups.break2StartTime.hour,
       };
     }
 
-    const breakMinutes = breakEndMinute - breakStartMinute;
+    const breakMinutes = breakIntervals.reduce(
+      (total, interval) => total + interval.minutes,
+      0,
+    );
 
     return {
       elapsedMinutes,
       actualMinutes: elapsedMinutes - breakMinutes,
       isOvernight,
       breakMinutes,
-      breakStartMinute,
-      breakEndMinute,
+      breakStartMinute: firstBreak.interval?.startMinute ?? null,
+      breakEndMinute: firstBreak.interval?.endMinute ?? null,
+      break2StartMinute: secondBreak.interval?.startMinute ?? null,
+      break2EndMinute: secondBreak.interval?.endMinute ?? null,
     };
   }
 
@@ -382,6 +529,8 @@
       endTime: shift.endTime,
       breakStartTime: shift.breakStartTime,
       breakEndTime: shift.breakEndTime,
+      break2StartTime: shift.break2StartTime,
+      break2EndTime: shift.break2EndTime,
       hourlyWage: shift.hourlyWage,
       memo: shift.memo,
     };
@@ -391,6 +540,10 @@
   }
 
   function restoreStoredShift(record) {
+    const break2StartTime =
+      record?.break2StartTime === undefined ? "" : record.break2StartTime;
+    const break2EndTime =
+      record?.break2EndTime === undefined ? "" : record.break2EndTime;
     const hasValidValues =
       record !== null &&
       typeof record === "object" &&
@@ -402,6 +555,8 @@
       isValidStoredTime(record.endTime) &&
       isValidStoredTime(record.breakStartTime, true) &&
       isValidStoredTime(record.breakEndTime, true) &&
+      isValidStoredTime(break2StartTime, true) &&
+      isValidStoredTime(break2EndTime, true) &&
       Number.isSafeInteger(record.hourlyWage) &&
       record.hourlyWage >= 0 &&
       typeof record.memo === "string";
@@ -413,6 +568,8 @@
       record.endTime,
       record.breakStartTime,
       record.breakEndTime,
+      break2StartTime,
+      break2EndTime,
     );
 
     if (calculatedTime.errorMessage) {
@@ -428,9 +585,13 @@
         endTime: record.endTime,
         breakStartTime: record.breakStartTime,
         breakEndTime: record.breakEndTime,
+        break2StartTime,
+        break2EndTime,
         breakMinutes: calculatedTime.breakMinutes,
         breakStartMinute: calculatedTime.breakStartMinute,
         breakEndMinute: calculatedTime.breakEndMinute,
+        break2StartMinute: calculatedTime.break2StartMinute,
+        break2EndMinute: calculatedTime.break2EndMinute,
         hourlyWage: record.hourlyWage,
         memo: record.memo,
         actualMinutes: calculatedTime.actualMinutes,
@@ -510,13 +671,20 @@
     const shiftStartMinute = parseTime(shift.startTime);
     const shiftEndMinute =
       parseTime(shift.endTime) + (shift.isOvernight ? MINUTES_PER_DAY : 0);
-    const breakNightMinutes =
-      shift.breakStartMinute === null
-        ? 0
-        : getNightMinutesWithinInterval(
-            shift.breakStartMinute,
-            shift.breakEndMinute,
-          );
+    const breakNightMinutes = [
+      [shift.breakStartMinute, shift.breakEndMinute],
+      [shift.break2StartMinute, shift.break2EndMinute],
+    ].reduce(
+      (total, [breakStartMinute, breakEndMinute]) =>
+        breakStartMinute === null || breakStartMinute === undefined
+          ? total
+          : total +
+            getNightMinutesWithinInterval(
+              breakStartMinute,
+              breakEndMinute,
+            ),
+      0,
+    );
     const nightMinutes = Math.max(
       0,
       getNightMinutesWithinInterval(shiftStartMinute, shiftEndMinute) -
@@ -1150,10 +1318,12 @@
     cancelEditButton.hidden = false;
     shiftFields.disabled = false;
     shiftForm.elements.namedItem("jobName").value = shift.jobName;
-    shiftForm.elements.namedItem("startTime").value = shift.startTime;
-    shiftForm.elements.namedItem("endTime").value = shift.endTime;
-    shiftForm.elements.namedItem("breakStartTime").value = shift.breakStartTime;
-    shiftForm.elements.namedItem("breakEndTime").value = shift.breakEndTime;
+    setTimeInputValue("startTime", shift.startTime);
+    setTimeInputValue("endTime", shift.endTime);
+    setTimeInputValue("breakStartTime", shift.breakStartTime);
+    setTimeInputValue("breakEndTime", shift.breakEndTime);
+    setTimeInputValue("break2StartTime", shift.break2StartTime);
+    setTimeInputValue("break2EndTime", shift.break2EndTime);
     shiftForm.elements.namedItem("hourlyWage").value =
       shift.hourlyWage === 0 ? "" : String(shift.hourlyWage);
     setFormMessage("");
@@ -1573,16 +1743,20 @@
     const formData = new FormData(shiftForm);
     const jobName = String(formData.get("jobName")).trim();
 
-    const startTime = String(formData.get("startTime"));
-    const endTime = String(formData.get("endTime"));
-    const breakStartTime = String(formData.get("breakStartTime"));
-    const breakEndTime = String(formData.get("breakEndTime"));
+    const startTime = getTimeInputValue("startTime");
+    const endTime = getTimeInputValue("endTime");
+    const breakStartTime = getTimeInputValue("breakStartTime");
+    const breakEndTime = getTimeInputValue("breakEndTime");
+    const break2StartTime = getTimeInputValue("break2StartTime");
+    const break2EndTime = getTimeInputValue("break2EndTime");
     const hourlyWageText = String(formData.get("hourlyWage")).trim();
     const calculatedTime = calculateShiftTime(
       startTime,
       endTime,
       breakStartTime,
       breakEndTime,
+      break2StartTime,
+      break2EndTime,
     );
 
     if (calculatedTime.errorMessage) {
@@ -1598,9 +1772,13 @@
       endTime,
       breakStartTime,
       breakEndTime,
+      break2StartTime,
+      break2EndTime,
       breakMinutes: calculatedTime.breakMinutes,
       breakStartMinute: calculatedTime.breakStartMinute,
       breakEndMinute: calculatedTime.breakEndMinute,
+      break2StartMinute: calculatedTime.break2StartMinute,
+      break2EndMinute: calculatedTime.break2EndMinute,
       hourlyWage: hourlyWageText === "" ? 0 : Number(hourlyWageText),
       memo: "",
       actualMinutes: calculatedTime.actualMinutes,
@@ -1701,10 +1879,20 @@
     });
   });
 
-  [breakStartInput, breakEndInput].forEach((input) => {
+  timeSegmentInputs.forEach((input) => {
+    input.addEventListener("input", () => normalizeTimeSegmentInput(input));
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Backspace" || input.value !== "") return;
+      const currentIndex = timeSegmentInputs.indexOf(input);
+      timeSegmentInputs[currentIndex - 1]?.focus();
+    });
+  });
+
+  breakTimeSegmentInputs.forEach((input) => {
     input.addEventListener("input", () => {
-      breakStartInput.setCustomValidity("");
-      breakEndInput.setCustomValidity("");
+      breakTimeSegmentInputs.forEach((breakInput) =>
+        breakInput.setCustomValidity(""),
+      );
     });
   });
 

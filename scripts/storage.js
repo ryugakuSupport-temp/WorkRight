@@ -98,7 +98,6 @@
 
   async function loadCalendarData() {
 //★indexedDBの読み込み失敗のための処理
-/*
     const testCounterKey = "indexeddb-read-failure-test-count";
     const failureCount = Number(sessionStorage.getItem(testCounterKey) ?? "0");
 
@@ -106,7 +105,6 @@
       sessionStorage.setItem(testCounterKey, String(failureCount + 1));
       throw new Error("IndexedDB read failure test.");
     }
-*/
 //★indexedDBの読み込み失敗のための処理
     return runTransaction(
       [SHIFT_STORE, LONG_BREAK_STORE],

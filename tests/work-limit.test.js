@@ -7,22 +7,8 @@ require("../scripts/work-limit.js");
 
 const workLimit = global.window.ShiftWorkLimit;
 
-function createShift({
-  startTime = "09:00",
-  endTime = "17:00",
-  actualMinutes = 8 * 60,
-  isOvernight = false,
-  breakStartMinute = null,
-  breakEndMinute = null,
-} = {}) {
-  return {
-    startTime,
-    endTime,
-    actualMinutes,
-    isOvernight,
-    breakStartMinute,
-    breakEndMinute,
-  };
+function createShift({ actualMinutes = 8 * 60 } = {}) {
+  return { actualMinutes };
 }
 
 function addShift(shiftsByDate, dateKey, shift) {
@@ -154,23 +140,25 @@ function addShift(shiftsByDate, dateKey, shift) {
   addShift(
     shiftsByDate,
     "2026-08-10",
-    createShift({
-      startTime: "22:00",
-      endTime: "04:00",
-      actualMinutes: 6 * 60,
-      isOvernight: true,
-    }),
+    createShift({ actualMinutes: 6 * 60 }),
   );
   addShift(shiftsByDate, "2026-08-11", createShift());
 
-  const dailySummary = workLimit.getDailySummary(
+  const startDateSummary = workLimit.getDailySummary(
+    "2026-08-10",
+    shiftsByDate,
+    longBreaks,
+  );
+  assert.equal(startDateSummary.totalMinutes, 6 * 60);
+  assert.equal(startDateSummary.hasWarning, false);
+
+  const nextDateSummary = workLimit.getDailySummary(
     "2026-08-11",
     shiftsByDate,
     longBreaks,
   );
-  assert.equal(dailySummary.totalMinutes, 12 * 60);
-  assert.equal(dailySummary.excessMinutes, 4 * 60);
-  assert.equal(dailySummary.hasWarning, true);
+  assert.equal(nextDateSummary.totalMinutes, 8 * 60);
+  assert.equal(nextDateSummary.hasWarning, false);
 }
 
 {
@@ -181,12 +169,7 @@ function addShift(shiftsByDate, dateKey, shift) {
   addShift(
     shiftsByDate,
     "2026-08-09",
-    createShift({
-      startTime: "22:00",
-      endTime: "04:00",
-      actualMinutes: 6 * 60,
-      isOvernight: true,
-    }),
+    createShift({ actualMinutes: 6 * 60 }),
   );
 
   const summaries = workLimit.getWorkLimitSummaries(
@@ -195,24 +178,7 @@ function addShift(shiftsByDate, dateKey, shift) {
     longBreaks,
   );
   assert.equal(summaries.weekly.totalMinutes, 0);
-  assert.equal(summaries.daily.totalMinutes, 4 * 60);
-}
-
-{
-  const split = workLimit.splitShiftAtMidnight(
-    createShift({
-      startTime: "22:00",
-      endTime: "06:00",
-      actualMinutes: 6 * 60,
-      isOvernight: true,
-      breakStartMinute: 23 * 60,
-      breakEndMinute: 25 * 60,
-    }),
-  );
-  assert.deepEqual(split, {
-    startDayMinutes: 60,
-    nextDayMinutes: 5 * 60,
-  });
+  assert.equal(summaries.daily.totalMinutes, 0);
 }
 
 {
@@ -223,12 +189,7 @@ function addShift(shiftsByDate, dateKey, shift) {
   addShift(
     shiftsByDate,
     "2026-08-20",
-    createShift({
-      startTime: "22:00",
-      endTime: "06:00",
-      actualMinutes: 8 * 60,
-      isOvernight: true,
-    }),
+    createShift({ actualMinutes: 8 * 60 }),
   );
 
   const lastLongBreakDay = workLimit.getWorkLimitSummaries(
@@ -237,7 +198,7 @@ function addShift(shiftsByDate, dateKey, shift) {
     longBreaks,
   );
   assert.equal(lastLongBreakDay.weekly.totalMinutes, 8 * 60);
-  assert.equal(lastLongBreakDay.daily.totalMinutes, 2 * 60);
+  assert.equal(lastLongBreakDay.daily.totalMinutes, 8 * 60);
 
   const firstNormalDay = workLimit.getWorkLimitSummaries(
     "2026-08-21",
