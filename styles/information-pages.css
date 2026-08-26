@@ -67,7 +67,9 @@
 }
 
 .information-background {
+  width: min(100%, 430px);
   min-height: 100vh;
+  margin-inline: auto;
   padding: clamp(16px, 4vw, 56px);
   background:
     radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.92), transparent 31%),
@@ -77,7 +79,7 @@
 .information-site-header,
 .information-main,
 .information-footer {
-  width: min(100%, 960px);
+  width: min(100%, 430px);
   margin-inline: auto;
 }
 
@@ -680,61 +682,60 @@
   padding-top: 22px;
 }
 
-@media (max-width: 700px) {
-  .app-header {
-    flex-wrap: wrap;
-  }
+/* Use the existing mobile layout at every viewport width. */
+.app-header {
+  flex-wrap: wrap;
+}
 
-  .information-links {
-    width: 100%;
-    margin-left: 0;
-  }
+.information-links {
+  width: 100%;
+  margin-left: 0;
+}
 
-  .information-link {
-    flex: 1 1 210px;
-  }
+.information-link {
+  flex: 1 1 210px;
+}
 
-  .information-background {
-    padding: 14px 10px 24px;
-  }
+.information-background {
+  padding: 14px 10px 24px;
+}
 
-  .information-site-header {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 12px;
-    padding-inline: 5px;
-  }
+.information-site-header {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 12px;
+  padding-inline: 5px;
+}
 
-  .information-site-header .return-link {
-    align-self: flex-start;
-  }
+.information-site-header .return-link {
+  align-self: flex-start;
+}
 
-  .information-main {
-    border-radius: 20px;
-  }
+.information-main {
+  border-radius: 20px;
+}
 
-  .information-hero,
-  .information-content {
-    padding: 24px 18px;
-  }
+.information-hero,
+.information-content {
+  padding: 24px 18px;
+}
 
-  .guide-disclosure summary {
-    padding: 14px 16px;
-  }
+.guide-disclosure summary {
+  padding: 14px 16px;
+}
 
-  .guide-disclosure-content {
-    padding: 20px 16px;
-  }
+.guide-disclosure-content {
+  padding: 20px 16px;
+}
 
-  .reference-card {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 16px;
-  }
+.reference-card {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 16px;
+}
 
-  .official-link {
-    align-self: flex-start;
-  }
+.official-link {
+  align-self: flex-start;
 }
 
 @media (prefers-reduced-motion: reduce) {

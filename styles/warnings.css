@@ -101,20 +101,19 @@
   line-height: 1.6;
 }
 
-@media (max-width: 640px) {
-  .overlap-warning-icon {
-    top: 4px;
-    right: 4px;
-    width: 19px;
-    height: 19px;
-    font-size: 0.66rem;
-  }
+/* Use the existing mobile layout at every viewport width. */
+.overlap-warning-icon {
+  top: 4px;
+  right: 4px;
+  width: 19px;
+  height: 19px;
+  font-size: 0.66rem;
+}
 
-  .monthly-legal-warning {
-    padding: 11px 12px;
-  }
+.monthly-legal-warning {
+  padding: 11px 12px;
+}
 
-  .daily-overlap-warning {
-    padding: 14px 16px;
-  }
+.daily-overlap-warning {
+  padding: 14px 16px;
 }

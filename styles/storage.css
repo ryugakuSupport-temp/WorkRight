@@ -20,7 +20,7 @@
 .storage-recovery-dialog {
   position: relative;
   z-index: 1;
-  width: min(100%, 620px);
+  width: min(100%, 430px);
   padding: 28px;
   border-radius: 24px;
   background: var(--paper);
@@ -92,13 +92,12 @@
   opacity: 0.6;
 }
 
-@media (max-width: 640px) {
-  .storage-recovery-dialog {
-    padding: 22px 18px;
-    border-radius: 20px;
-  }
+/* Use the existing mobile layout at every viewport width. */
+.storage-recovery-dialog {
+  padding: 22px 18px;
+  border-radius: 20px;
+}
 
-  .storage-recovery-actions {
-    grid-template-columns: 1fr;
-  }
+.storage-recovery-actions {
+  grid-template-columns: 1fr;
 }

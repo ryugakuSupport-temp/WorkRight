@@ -119,19 +119,18 @@
   line-height: 1.6;
 }
 
-@media (max-width: 640px) {
-  .monthly-estimated-pay strong,
-  .daily-estimated-pay strong {
-    display: block;
-    margin: 3px 0 0;
-  }
+/* Use the existing mobile layout at every viewport width. */
+.monthly-estimated-pay strong,
+.daily-estimated-pay strong {
+  display: block;
+  margin: 3px 0 0;
+}
 
-  .shift-item-actions {
-    flex-wrap: wrap;
-  }
+.shift-item-actions {
+  flex-wrap: wrap;
+}
 
-  .pay-breakdown-button {
-    flex-basis: 100%;
-    margin-right: 0;
-  }
+.pay-breakdown-button {
+  flex-basis: 100%;
+  margin-right: 0;
 }

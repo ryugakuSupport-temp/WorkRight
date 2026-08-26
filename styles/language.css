@@ -66,7 +66,7 @@
 .language-dialog {
   position: relative;
   z-index: 1;
-  width: min(100%, 520px);
+  width: min(100%, 430px);
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   border: 1px solid rgba(23, 75, 99, 0.1);
@@ -167,46 +167,45 @@
   font-weight: 800;
 }
 
-@media (max-width: 640px) {
-  .management-tabs,
-  .management-tab-list {
-    gap: 4px;
-  }
+/* Use the existing mobile layout at every viewport width. */
+.management-tabs,
+.management-tab-list {
+  gap: 4px;
+}
 
-  .management-tab-list {
-    flex: 1;
-  }
+.management-tab-list {
+  flex: 1;
+}
 
-  .management-tab {
-    min-width: 0;
-    padding-inline: 6px;
-    font-size: 0.78rem;
-  }
+.management-tab {
+  min-width: 0;
+  padding-inline: 6px;
+  font-size: 0.78rem;
+}
 
-  .language-button {
-    flex: 0 0 auto;
-    gap: 4px;
-    padding-inline: 9px;
-    font-size: 0.72rem;
-  }
+.language-button {
+  flex: 0 0 auto;
+  gap: 4px;
+  padding-inline: 9px;
+  font-size: 0.72rem;
+}
 
-  .language-modal {
-    padding: 10px;
-  }
+.language-modal {
+  padding: 10px;
+}
 
-  .language-dialog {
-    max-height: calc(100vh - 20px);
-    border-radius: 20px;
-  }
+.language-dialog {
+  max-height: calc(100vh - 20px);
+  border-radius: 20px;
+}
 
-  .language-dialog-header,
-  .language-list {
-    padding-right: 18px;
-    padding-left: 18px;
-  }
+.language-dialog-header,
+.language-list {
+  padding-right: 18px;
+  padding-left: 18px;
+}
 
-  .language-dialog > p {
-    padding-right: 18px;
-    padding-left: 18px;
-  }
+.language-dialog > p {
+  padding-right: 18px;
+  padding-left: 18px;
 }
