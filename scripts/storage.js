@@ -97,15 +97,15 @@
   }
 
   async function loadCalendarData() {
-//★indexedDBの読み込み失敗のための処理
-    const testCounterKey = "indexeddb-read-failure-test-count";
-    const failureCount = Number(sessionStorage.getItem(testCounterKey) ?? "0");
-
-    if (failureCount < 3) {
-      sessionStorage.setItem(testCounterKey, String(failureCount + 1));
-      throw new Error("IndexedDB read failure test.");
-    }
-//★indexedDBの読み込み失敗のための処理
+    // ★IndexedDB読み込み失敗テスト（現在はコメントアウト）
+    // const testCounterKey = "indexeddb-read-failure-test-count";
+    // const failureCount = Number(sessionStorage.getItem(testCounterKey) ?? "0");
+    //
+    // if (failureCount < 3) {
+    //   sessionStorage.setItem(testCounterKey, String(failureCount + 1));
+    //   throw new Error("IndexedDB read failure test.");
+    // }
+    // ★IndexedDB読み込み失敗テストここまで
     return runTransaction(
       [SHIFT_STORE, LONG_BREAK_STORE],
       "readonly",

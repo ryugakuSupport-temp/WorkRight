@@ -425,7 +425,10 @@ textarea {
 }
 
 .shift-close-button {
-  position: relative;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
   width: 42px;
   min-height: 42px;
   padding: 0;
@@ -905,7 +908,18 @@ textarea {
 }
 
 .day-panel-header {
+  display: grid;
+  align-items: start;
+  gap: 12px;
   padding: 20px 16px;
+}
+
+.day-panel-date {
+  padding-right: 52px;
+}
+
+.day-panel-actions {
+  justify-content: flex-end;
 }
 
 .day-panel-content {
@@ -987,6 +1001,7 @@ textarea {
 
 .shift-item-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 12px;
@@ -996,12 +1011,16 @@ textarea {
 
 .edit-shift-button,
 .delete-shift-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 40px;
   padding: 0 14px;
   border-radius: 9px;
   background: #fff;
   font-size: 0.76rem;
   font-weight: 750;
+  white-space: nowrap;
   cursor: pointer;
 }
 

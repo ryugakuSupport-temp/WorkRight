@@ -205,6 +205,7 @@
 
 .long-break-item-actions {
   display: flex;
+  flex-wrap: wrap;
   flex-shrink: 0;
   gap: 7px;
 }
@@ -223,7 +224,11 @@
 
 .edit-long-break-button,
 .delete-long-break-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 14px;
+  white-space: nowrap;
 }
 
 .edit-long-break-button {
@@ -323,6 +328,13 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.long-break-date-fields input[type="date"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .cancel-long-break-button {

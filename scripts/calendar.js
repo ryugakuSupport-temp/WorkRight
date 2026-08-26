@@ -1286,7 +1286,7 @@
     );
     editButton.className = "edit-shift-button";
     editButton.type = "button";
-    editButton.textContent = translate("common.edit");
+    editButton.textContent = "✏️ " + translate("common.edit");
     editButton.setAttribute(
       "aria-label",
       translate("shift.editAria", { name: displayName }),
@@ -1295,7 +1295,7 @@
 
     deleteButton.className = "delete-shift-button";
     deleteButton.type = "button";
-    deleteButton.textContent = translate("common.delete");
+    deleteButton.textContent = "🗑️ " + translate("common.delete");
     deleteButton.setAttribute(
       "aria-label",
       translate("shift.deleteAria", { name: displayName }),
@@ -1638,7 +1638,7 @@
     actions.className = "long-break-item-actions";
     editButton.className = "edit-long-break-button";
     editButton.type = "button";
-    editButton.textContent = translate("common.edit");
+    editButton.textContent = "✏️ " + translate("common.edit");
     editButton.setAttribute(
       "aria-label",
       translate("longBreak.editAria", { name: displayName }),
@@ -1647,7 +1647,7 @@
 
     deleteButton.className = "delete-long-break-button";
     deleteButton.type = "button";
-    deleteButton.textContent = translate("common.delete");
+    deleteButton.textContent = "🗑️ " + translate("common.delete");
     deleteButton.setAttribute(
       "aria-label",
       translate("longBreak.deleteAria", { name: displayName }),
