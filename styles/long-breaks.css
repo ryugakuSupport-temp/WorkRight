@@ -341,9 +341,13 @@
 
 .long-break-date-fields input[type="date"] {
   display: block;
+  box-sizing: border-box;
   width: 100%;
+  inline-size: 100%;
   min-width: 0;
   max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .cancel-long-break-button {
