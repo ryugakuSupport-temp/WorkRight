@@ -339,15 +339,37 @@
   max-width: 100%;
 }
 
-.long-break-date-fields input[type="date"] {
+.long-break-date-input-frame {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 46px;
+  overflow: hidden;
+  border: 1px solid #cbd8d2;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.long-break-date-input-frame input[type="date"] {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  inline-size: 100%;
   min-width: 0;
   max-width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
   -webkit-appearance: none;
   appearance: none;
+}
+
+.long-break-date-input-frame:focus-within {
+  border-color: var(--green);
+  outline: 3px solid rgba(23, 75, 99, 0.16);
 }
 
 .cancel-long-break-button {
