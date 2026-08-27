@@ -6,6 +6,7 @@
   const storage = window.ShiftStorage;
   let currentLanguageCode = catalog.defaultLanguage;
   let languageButton = null;
+  let languageReturnButton = null;
   let languageModal = null;
   let languageModalHeading = null;
   let languageList = null;
@@ -94,7 +95,7 @@
       try {
         await setLanguage(language.code);
         closeLanguageModal(false);
-        languageButton.focus();
+        languageReturnButton.focus();
       } catch (error) {
         window.alert(translate("storage.saveFailed"));
         button.disabled = false;
@@ -154,10 +155,11 @@
 
   function closeLanguageModal(restoreFocus = true) {
     languageModal.hidden = true;
-    if (restoreFocus) languageButton.focus();
+    if (restoreFocus) languageReturnButton.focus();
   }
 
   languageButton = document.getElementById("language-button");
+  languageReturnButton = document.getElementById("menu-button");
   languageModal = document.getElementById("language-modal");
   languageModalHeading = document.getElementById("language-modal-heading");
   languageList = document.getElementById("language-list");

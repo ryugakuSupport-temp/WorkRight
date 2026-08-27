@@ -1,0 +1,189 @@
+/* ヘッダーのメニューボタンとナビゲーションモーダル */
+.app-header {
+  flex-wrap: nowrap;
+}
+
+.app-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-title .app-name {
+  overflow-wrap: anywhere;
+}
+
+.menu-button {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 48px;
+  min-height: 48px;
+  margin-left: auto;
+  padding: 0;
+  place-items: center;
+  border: 2px solid var(--green-deep);
+  border-radius: 50%;
+  color: var(--green-deep);
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+}
+
+.menu-button-icon {
+  display: grid;
+  width: 23px;
+  gap: 5px;
+}
+
+.menu-button-icon span {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.menu-button:hover,
+.menu-button:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.menu-button:focus-visible,
+.menu-close-button:focus-visible,
+.navigation-menu-list .menu-item:focus-visible {
+  outline: 3px solid rgba(23, 75, 99, 0.24);
+  outline-offset: 2px;
+}
+
+.navigation-menu-modal[hidden] {
+  display: none;
+}
+
+.navigation-menu-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 115;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+
+.navigation-menu-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 48, 46, 0.58);
+  cursor: pointer;
+}
+
+.navigation-menu-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 390px);
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  border: 1px solid rgba(23, 75, 99, 0.1);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(23, 75, 99, 0.22);
+}
+
+.navigation-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.navigation-menu-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.menu-close-button {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  background: #fff;
+  cursor: pointer;
+}
+
+.menu-close-button::before,
+.menu-close-button::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.menu-close-button::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.menu-close-button::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.navigation-menu-list,
+.menu-management-group {
+  display: grid;
+  gap: 10px;
+}
+
+.navigation-menu-list {
+  padding: 18px 20px 22px;
+}
+
+.navigation-menu-list .menu-item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 54px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid #cbd8d2;
+  border-radius: 12px;
+  color: var(--green-deep);
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.navigation-menu-list .menu-item:hover,
+.navigation-menu-list .menu-item:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.navigation-menu-list .management-tab.active {
+  border-color: var(--green);
+  background: var(--green-soft);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+
+.navigation-menu-list .language-button-icon {
+  font-size: 1.15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-button,
+  .navigation-menu-list .menu-item {
+    transition: none;
+  }
+}

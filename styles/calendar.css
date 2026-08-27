@@ -538,6 +538,7 @@ textarea {
   border-radius: 10px;
   color: var(--ink);
   background: #fff;
+  font-size: 16px;
 }
 
 .form-field textarea {
