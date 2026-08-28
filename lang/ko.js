@@ -7,6 +7,7 @@
     "app.ariaLabel": "WorkRight 월간 시프트 캘린더",
     "app.name": "WorkRight",
     "nav.ariaLabel": "관리 화면",
+    "menu.title": "메뉴",
     "nav.shift": "시프트 관리",
     "nav.longBreak": "방학 관리",
     "language.openAria": "언어 선택 열기",

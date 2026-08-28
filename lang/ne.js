@@ -7,6 +7,7 @@
     "app.ariaLabel": "WorkRight मासिक सिफ्ट पात्रो",
     "app.name": "WorkRight",
     "nav.ariaLabel": "व्यवस्थापन स्क्रिनहरू",
+    "menu.title": "मेनु",
     "nav.shift": "सिफ्ट व्यवस्थापन",
     "nav.longBreak": "विद्यालयको बिदा व्यवस्थापन",
     "language.openAria": "भाषा चयन खोल्नुहोस्",

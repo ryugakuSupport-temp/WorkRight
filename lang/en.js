@@ -7,6 +7,7 @@
     "app.ariaLabel": "WorkRight monthly calendar",
     "app.name": "WorkRight",
     "nav.ariaLabel": "Management screens",
+    "menu.title": "Menu",
     "nav.shift": "Shift Manager",
     "nav.longBreak": "School Holidays",
     "language.openAria": "Open language selection",

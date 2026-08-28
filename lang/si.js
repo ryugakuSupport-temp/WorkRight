@@ -7,6 +7,7 @@
     "app.ariaLabel": "WorkRight මාසික වැඩ මුර දින දර්ශනය",
     "app.name": "WorkRight",
     "nav.ariaLabel": "කළමනාකරණ තිර",
+    "menu.title": "මෙනුව",
     "nav.shift": "වැඩ මුර කළමනාකරණය",
     "nav.longBreak": "පාසල් නිවාඩු කළමනාකරණය",
     "language.openAria": "භාෂා තේරීම විවෘත කරන්න",

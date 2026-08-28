@@ -7,6 +7,7 @@
     "app.ariaLabel": "WorkRight လစဉ်အလုပ်ချိန်ပြက္ခဒိန်",
     "app.name": "WorkRight",
     "nav.ariaLabel": "စီမံခန့်ခွဲမှု မျက်နှာပြင်များ",
+    "menu.title": "မီနူး",
     "nav.shift": "အလုပ်ချိန်စီမံခန့်ခွဲမှု",
     "nav.longBreak": "ကျောင်းပိတ်ရက် စီမံခန့်ခွဲမှု",
     "language.openAria": "ဘာသာစကားရွေးချယ်မှုကို ဖွင့်ပါ",

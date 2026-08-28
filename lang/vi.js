@@ -7,6 +7,7 @@
     "app.ariaLabel": "Lịch tháng WorkRight",
     "app.name": "WorkRight",
     "nav.ariaLabel": "Màn hình quản lý",
+    "menu.title": "Menu",
     "nav.shift": "Quản lý ca làm",
     "nav.longBreak": "Quản lý kỳ nghỉ của trường",
     "language.openAria": "Mở phần chọn ngôn ngữ",

@@ -7,6 +7,7 @@
     "app.ariaLabel": "WorkRight মাসিক শিফট ক্যালেন্ডার",
     "app.name": "WorkRight",
     "nav.ariaLabel": "ব্যবস্থাপনা স্ক্রিন",
+    "menu.title": "মেনু",
     "nav.shift": "শিফট ব্যবস্থাপনা",
     "nav.longBreak": "স্কুলের ছুটি ব্যবস্থাপনা",
     "language.openAria": "ভাষা নির্বাচন খুলুন",

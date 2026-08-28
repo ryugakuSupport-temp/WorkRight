@@ -7,6 +7,7 @@
     "app.ariaLabel": "WorkRight（ワークライト）月間カレンダー",
     "app.name": "WorkRight（ワークライト）",
     "nav.ariaLabel": "管理画面",
+    "menu.title": "メニュー",
     "nav.shift": "シフト管理",
     "nav.longBreak": "学校の長期休み管理",
     "language.openAria": "言語選択を開く",
