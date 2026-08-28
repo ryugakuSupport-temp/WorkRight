@@ -232,10 +232,12 @@
 }
 
 .edit-long-break-button {
+  border-color: var(--green);
   color: var(--green-deep);
 }
 
 .delete-long-break-button {
+  border-color: #d98982;
   color: #a3362f;
 }
 

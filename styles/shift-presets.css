@@ -174,19 +174,38 @@
 }
 
 .shift-preset-action {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
   min-height: 34px;
-  padding: 5px 8px;
-  border: 1px solid #b9c8c1;
+  padding: 0;
+  border: 1px solid var(--green);
   border-radius: 8px;
-  color: var(--ink);
+  color: var(--green-deep);
   background: #fff;
-  font-size: 0.7rem;
+  font-size: 1rem;
   font-weight: 750;
   cursor: pointer;
 }
 
 .shift-preset-action.delete {
-  color: #a13a33;
+  border-color: #d98982;
+  color: #9c2e27;
+}
+
+.shift-preset-action:not(.delete):hover,
+.shift-preset-action:not(.delete):focus-visible {
+  background: var(--green-soft);
+}
+
+.shift-preset-action.delete:hover,
+.shift-preset-action.delete:focus-visible {
+  background: #fff0ee;
+}
+
+.shift-preset-action:focus-visible {
+  outline: 3px solid rgba(23, 75, 99, 0.2);
+  outline-offset: 2px;
 }
 
 .template-name-modal {

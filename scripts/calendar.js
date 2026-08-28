@@ -1628,7 +1628,7 @@
       const editButton = document.createElement("button");
       editButton.className = "shift-preset-action";
       editButton.type = "button";
-      editButton.textContent = translate("common.edit");
+      editButton.textContent = "✏️";
       editButton.setAttribute(
         "aria-label",
         translate("shift.preset.editAria", { name: displayName }),
@@ -1643,7 +1643,7 @@
       const deleteButton = document.createElement("button");
       deleteButton.className = "shift-preset-action delete";
       deleteButton.type = "button";
-      deleteButton.textContent = translate("common.delete");
+      deleteButton.textContent = "🗑️";
       deleteButton.setAttribute(
         "aria-label",
         translate("shift.preset.deleteTemplateAria", { name: displayName }),
@@ -1654,7 +1654,7 @@
       const deleteButton = document.createElement("button");
       deleteButton.className = "shift-preset-action delete";
       deleteButton.type = "button";
-      deleteButton.textContent = translate("common.delete");
+      deleteButton.textContent = "🗑️";
       deleteButton.setAttribute(
         "aria-label",
         translate("shift.preset.deleteHistoryAria", { name: displayName }),
