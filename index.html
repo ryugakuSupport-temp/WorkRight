@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="./styles/storage.css">
     <link rel="stylesheet" href="./styles/information-pages.css">
     <link rel="stylesheet" href="./styles/menu.css">
+    <link rel="stylesheet" href="./styles/shift-presets.css">
     <script src="./lang/languages.js" defer></script>
     <script src="./lang/ja.js" defer></script>
     <script src="./lang/en.js" defer></script>
@@ -30,6 +31,7 @@
     <script src="./lang/language.js" defer></script>
     <script src="./scripts/work-limit.js" defer></script>
     <script src="./scripts/break-time.js" defer></script>
+    <script src="./scripts/shift-presets.js" defer></script>
     <script src="./scripts/calendar.js" defer></script>
     <script src="./scripts/menu.js" defer></script>
   </head>
@@ -407,15 +409,72 @@
 
               <fieldset id="shift-fields">
                 <div class="form-grid">
-                  <label class="form-field form-field-wide">
-                    <span data-i18n="shift.form.jobName">バイト名</span>
-                    <input
-                      id="job-name"
-                      name="jobName"
-                      type="text"
-                      autocomplete="off"
-                    >
-                  </label>
+                  <div class="form-field form-field-wide">
+                    <span id="job-name-label" data-i18n="shift.form.jobName">バイト名</span>
+                    <div class="job-name-input-row">
+                      <input
+                        id="job-name"
+                        name="jobName"
+                        type="text"
+                        autocomplete="off"
+                        aria-labelledby="job-name-label"
+                      >
+                      <button
+                        id="shift-preset-button"
+                        class="shift-preset-button"
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="shift-preset-panel"
+                        aria-label="テンプレートと履歴を開く"
+                        data-i18n-aria-label="shift.preset.openAria"
+                      >
+                        <span class="shift-preset-icon" aria-hidden="true"></span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <section
+                    id="shift-preset-panel"
+                    class="shift-preset-panel form-field-wide"
+                    aria-label="シフトテンプレートと履歴"
+                    data-i18n-aria-label="shift.preset.panelAria"
+                    hidden
+                  >
+                    <section class="shift-preset-section" aria-labelledby="shift-template-heading">
+                      <header class="shift-preset-section-header">
+                        <h4 id="shift-template-heading" data-i18n="shift.preset.templates">
+                          登録済みテンプレート
+                        </h4>
+                        <button
+                          id="create-shift-template"
+                          class="create-template-button"
+                          type="button"
+                          data-i18n="shift.preset.createFromCurrent"
+                        >
+                          現在の入力内容から作成
+                        </button>
+                      </header>
+                      <button
+                        id="cancel-template-edit"
+                        class="create-template-button"
+                        type="button"
+                        hidden
+                        data-i18n="shift.preset.cancelTemplateEdit"
+                      >
+                        テンプレート編集をキャンセル
+                      </button>
+                      <p id="shift-template-limit" class="shift-preset-limit"></p>
+                      <div id="shift-template-list" class="shift-preset-list"></div>
+                    </section>
+                    <section class="shift-preset-section" aria-labelledby="shift-history-heading">
+                      <header class="shift-preset-section-header">
+                        <h4 id="shift-history-heading" data-i18n="shift.preset.history">
+                          登録履歴
+                        </h4>
+                      </header>
+                      <div id="shift-history-list" class="shift-preset-list"></div>
+                    </section>
+                  </section>
 
                   <div class="form-field">
                     <span id="start-time-label"><span data-i18n="shift.form.start">開始時刻</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
@@ -499,6 +558,50 @@
             </section>
           </div>
           </section>
+        </div>
+
+        <div id="template-name-modal" class="template-name-modal" hidden>
+          <div
+            id="template-name-backdrop"
+            class="template-name-backdrop"
+            aria-hidden="true"
+          ></div>
+          <form
+            id="template-name-form"
+            class="template-name-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="template-name-heading"
+          >
+            <h3 id="template-name-heading" tabindex="-1">テンプレートを作成</h3>
+            <label class="form-field">
+              <span data-i18n="shift.preset.nameLabel">テンプレート名</span>
+              <input
+                id="template-name"
+                name="templateName"
+                type="text"
+                maxlength="50"
+                autocomplete="off"
+                required
+              >
+            </label>
+            <div class="template-name-actions">
+              <button
+                id="save-shift-template"
+                class="save-template-button"
+                type="submit"
+              >
+                テンプレートを保存
+              </button>
+              <button
+                id="cancel-template-name"
+                type="button"
+                data-i18n="common.cancel"
+              >
+                キャンセル
+              </button>
+            </div>
+          </form>
         </div>
 
         <footer class="app-footer">

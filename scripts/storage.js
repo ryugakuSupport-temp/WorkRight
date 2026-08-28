@@ -2,9 +2,11 @@
   "use strict";
 
   const DATABASE_NAME = "shift-check-tool";
-  const DATABASE_VERSION = 1;
+  const DATABASE_VERSION = 2;
   const SHIFT_STORE = "shifts";
   const LONG_BREAK_STORE = "longBreaks";
+  const SHIFT_TEMPLATE_STORE = "shiftTemplates";
+  const SHIFT_HISTORY_STORE = "shiftHistory";
   const SETTINGS_STORE = "settings";
   let databasePromise = null;
   let openDatabaseInstance = null;
@@ -24,6 +26,20 @@
         autoIncrement: true,
       });
       longBreakStore.createIndex("startDate", "startDate", { unique: false });
+    }
+
+    if (!database.objectStoreNames.contains(SHIFT_TEMPLATE_STORE)) {
+      database.createObjectStore(SHIFT_TEMPLATE_STORE, {
+        keyPath: "id",
+        autoIncrement: true,
+      });
+    }
+
+    if (!database.objectStoreNames.contains(SHIFT_HISTORY_STORE)) {
+      database.createObjectStore(SHIFT_HISTORY_STORE, {
+        keyPath: "id",
+        autoIncrement: true,
+      });
     }
 
     if (!database.objectStoreNames.contains(SETTINGS_STORE)) {
@@ -107,13 +123,29 @@
     // }
     // ★IndexedDB読み込み失敗テストここまで
     return runTransaction(
-      [SHIFT_STORE, LONG_BREAK_STORE],
+      [
+        SHIFT_STORE,
+        LONG_BREAK_STORE,
+        SHIFT_TEMPLATE_STORE,
+        SHIFT_HISTORY_STORE,
+      ],
       "readonly",
       (transaction, setResult) => {
-        const result = { shifts: [], longBreaks: [] };
+        const result = {
+          shifts: [],
+          longBreaks: [],
+          shiftTemplates: [],
+          shiftHistory: [],
+        };
         const shiftRequest = transaction.objectStore(SHIFT_STORE).getAll();
         const longBreakRequest = transaction
           .objectStore(LONG_BREAK_STORE)
+          .getAll();
+        const templateRequest = transaction
+          .objectStore(SHIFT_TEMPLATE_STORE)
+          .getAll();
+        const historyRequest = transaction
+          .objectStore(SHIFT_HISTORY_STORE)
           .getAll();
 
         shiftRequest.addEventListener("success", () => {
@@ -123,6 +155,45 @@
         longBreakRequest.addEventListener("success", () => {
           result.longBreaks = longBreakRequest.result;
           setResult(result);
+        });
+        templateRequest.addEventListener("success", () => {
+          result.shiftTemplates = templateRequest.result;
+          setResult(result);
+        });
+        historyRequest.addEventListener("success", () => {
+          result.shiftHistory = historyRequest.result;
+          setResult(result);
+        });
+      },
+    );
+  }
+
+  function addShiftWithHistory(shiftRecord, historyRecord, historyIdsToDelete) {
+    return runTransaction(
+      [SHIFT_STORE, SHIFT_HISTORY_STORE],
+      "readwrite",
+      (transaction, setResult) => {
+        const shiftRequest = transaction.objectStore(SHIFT_STORE).add(shiftRecord);
+        const historyStore = transaction.objectStore(SHIFT_HISTORY_STORE);
+        const historyRequest = historyStore.add(historyRecord);
+        let shiftId = null;
+        let historyId = null;
+
+        historyIdsToDelete.forEach((id) => historyStore.delete(id));
+
+        function setIdsWhenReady() {
+          if (shiftId !== null && historyId !== null) {
+            setResult({ shiftId, historyId });
+          }
+        }
+
+        shiftRequest.addEventListener("success", () => {
+          shiftId = shiftRequest.result;
+          setIdsWhenReady();
+        });
+        historyRequest.addEventListener("success", () => {
+          historyId = historyRequest.result;
+          setIdsWhenReady();
         });
       },
     );
@@ -187,11 +258,16 @@
   window.ShiftStorage = Object.freeze({
     loadCalendarData,
     addShift: (record) => addRecord(SHIFT_STORE, record),
+    addShiftWithHistory,
     updateShift: (record) => updateRecord(SHIFT_STORE, record),
     deleteShift: (id) => deleteRecord(SHIFT_STORE, id),
     addLongBreak: (record) => addRecord(LONG_BREAK_STORE, record),
     updateLongBreak: (record) => updateRecord(LONG_BREAK_STORE, record),
     deleteLongBreak: (id) => deleteRecord(LONG_BREAK_STORE, id),
+    addShiftTemplate: (record) => addRecord(SHIFT_TEMPLATE_STORE, record),
+    updateShiftTemplate: (record) => updateRecord(SHIFT_TEMPLATE_STORE, record),
+    deleteShiftTemplate: (id) => deleteRecord(SHIFT_TEMPLATE_STORE, id),
+    deleteShiftHistory: (id) => deleteRecord(SHIFT_HISTORY_STORE, id),
     getSetting,
     setSetting,
     resetDatabase,

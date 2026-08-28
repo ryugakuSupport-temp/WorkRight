@@ -11,6 +11,7 @@
   const storage = window.ShiftStorage;
   const workLimit = window.ShiftWorkLimit;
   const breakTime = window.ShiftBreakTime;
+  const presets = window.ShiftPresets;
 
   const monthHeading = document.getElementById("calendar-month-heading");
   const monthlyEstimatedPay = document.getElementById("monthly-estimated-pay");
@@ -39,6 +40,32 @@
   const shiftSubmitButton = document.getElementById("shift-submit-button");
   const cancelEditButton = document.getElementById("cancel-edit");
   const jobNameInput = document.getElementById("job-name");
+  const shiftPresetButton = document.getElementById("shift-preset-button");
+  const shiftPresetPanel = document.getElementById("shift-preset-panel");
+  const createShiftTemplateButton = document.getElementById(
+    "create-shift-template",
+  );
+  const cancelTemplateEditButton = document.getElementById(
+    "cancel-template-edit",
+  );
+  const shiftTemplateLimit = document.getElementById("shift-template-limit");
+  const shiftTemplateList = document.getElementById("shift-template-list");
+  const shiftHistoryList = document.getElementById("shift-history-list");
+  const templateNameModal = document.getElementById("template-name-modal");
+  const templateNameBackdrop = document.getElementById(
+    "template-name-backdrop",
+  );
+  const templateNameForm = document.getElementById("template-name-form");
+  const templateNameHeading = document.getElementById(
+    "template-name-heading",
+  );
+  const templateNameInput = document.getElementById("template-name");
+  const saveShiftTemplateButton = document.getElementById(
+    "save-shift-template",
+  );
+  const cancelTemplateNameButton = document.getElementById(
+    "cancel-template-name",
+  );
   const baseTimeInputGroups = Object.freeze({
     startTime: Object.freeze({
       hour: document.getElementById("start-time-hour"),
@@ -127,10 +154,14 @@
   const today = new Date();
   const shiftsByDate = new Map();
   const longBreaks = [];
+  const shiftTemplates = [];
+  const shiftHistory = [];
   let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   let selectedDate = null;
   let editingShiftId = null;
   let editingLongBreakId = null;
+  let editingTemplateId = null;
+  let pendingTemplateContent = null;
 
   function translate(key, values = {}) {
     return language.translate(key, values);
@@ -720,6 +751,72 @@
         createdOrder: record.id,
       },
     };
+  }
+
+  function createStoredShiftPreset(shift, additionalValues = {}) {
+    const record = {
+      ...additionalValues,
+      ...presets.createShiftContent(shift),
+    };
+
+    if (shift.id !== undefined) record.id = shift.id;
+    return record;
+  }
+
+  function restoreStoredShiftPreset(record, type) {
+    const storedBreaks = getStoredBreakTimes(record);
+    const hasValidBaseValues =
+      record !== null &&
+      typeof record === "object" &&
+      Number.isSafeInteger(record.id) &&
+      record.id > 0 &&
+      typeof record.jobName === "string" &&
+      isValidStoredTime(record.startTime) &&
+      isValidStoredTime(record.endTime) &&
+      storedBreaks !== null &&
+      Number.isSafeInteger(record.hourlyWage) &&
+      record.hourlyWage >= 0;
+    const hasValidTypeValues =
+      type === "template"
+        ? typeof record.name === "string" && record.name.trim() !== ""
+        : typeof record.contentKey === "string";
+
+    if (!hasValidBaseValues || !hasValidTypeValues) {
+      throw new Error("Stored shift preset data is invalid.");
+    }
+
+    const calculatedTime = breakTime.calculateShiftTime(
+      record.startTime,
+      record.endTime,
+      storedBreaks,
+    );
+
+    if (calculatedTime.error) {
+      throw new Error("Stored shift preset time is invalid.");
+    }
+
+    const restored = {
+      id: record.id,
+      jobName: record.jobName,
+      startTime: record.startTime,
+      endTime: record.endTime,
+      breaks: calculatedTime.breaks,
+      breakMinutes: calculatedTime.breakMinutes,
+      hourlyWage: record.hourlyWage,
+      actualMinutes: calculatedTime.actualMinutes,
+      isOvernight: calculatedTime.isOvernight,
+    };
+
+    if (type === "template") {
+      restored.name = record.name.trim();
+    } else {
+      restored.contentKey = record.contentKey;
+      if (presets.createContentKey(restored) !== record.contentKey) {
+        throw new Error("Stored shift history key is invalid.");
+      }
+    }
+
+    return restored;
   }
 
   function createStoredLongBreak(longBreak) {
@@ -1376,6 +1473,308 @@
     formMessage.hidden = message === "";
   }
 
+  function closeShiftPresetPanel() {
+    shiftPresetPanel.hidden = true;
+    shiftPresetButton.setAttribute("aria-expanded", "false");
+  }
+
+  function isShiftFormEmpty() {
+    return (
+      jobNameInput.value.trim() === "" &&
+      getBaseTimeInputValue("startTime") === "" &&
+      getBaseTimeInputValue("endTime") === "" &&
+      getBreakTimeValues().every(
+        (breakValue) =>
+          breakValue.startTime === "" && breakValue.endTime === "",
+      ) &&
+      String(hourlyWageInput.value).trim() === ""
+    );
+  }
+
+  function readShiftFormValues() {
+    applyShiftFieldValidityMessages();
+    if (!shiftForm.reportValidity()) return null;
+
+    const formData = new FormData(shiftForm);
+    const startTime = getBaseTimeInputValue("startTime");
+    const endTime = getBaseTimeInputValue("endTime");
+    const calculatedTime = breakTime.calculateShiftTime(
+      startTime,
+      endTime,
+      getBreakTimeValues(),
+    );
+
+    if (calculatedTime.error) {
+      const errorInput = getBreakErrorInput(calculatedTime.error);
+      const errorMessage = translate(
+        getBreakErrorTranslationKey(calculatedTime.error.code),
+        { limit: breakTime.MAX_BREAKS },
+      );
+
+      if (errorInput === null) {
+        setFormMessage(errorMessage, "error");
+      } else {
+        errorInput.setCustomValidity(errorMessage);
+        errorInput.reportValidity();
+      }
+      return null;
+    }
+
+    const hourlyWageText = String(formData.get("hourlyWage")).trim();
+    return {
+      jobName: String(formData.get("jobName")).trim(),
+      startTime,
+      endTime,
+      breaks: calculatedTime.breaks,
+      breakMinutes: calculatedTime.breakMinutes,
+      hourlyWage: hourlyWageText === "" ? 0 : Number(hourlyWageText),
+      memo: "",
+      actualMinutes: calculatedTime.actualMinutes,
+      isOvernight: calculatedTime.isOvernight,
+    };
+  }
+
+  function clearTemplateEditMode() {
+    editingTemplateId = null;
+    createShiftTemplateButton.textContent = translate(
+      "shift.preset.createFromCurrent",
+    );
+    cancelTemplateEditButton.hidden = true;
+  }
+
+  function updateTemplateControls() {
+    const isEditingTemplate = editingTemplateId !== null;
+    createShiftTemplateButton.disabled =
+      !isEditingTemplate && shiftTemplates.length >= presets.MAX_TEMPLATES;
+    createShiftTemplateButton.textContent = translate(
+      isEditingTemplate
+        ? "shift.preset.updateFromCurrent"
+        : "shift.preset.createFromCurrent",
+    );
+    cancelTemplateEditButton.hidden = !isEditingTemplate;
+    shiftTemplateLimit.textContent = translate("shift.preset.templateLimit", {
+      count: shiftTemplates.length,
+      limit: presets.MAX_TEMPLATES,
+    });
+  }
+
+  function getPresetSummary(shift, includeJobName) {
+    const details = [
+      formatShiftTimeRange(shift),
+      translate("shift.preset.breakSummary", {
+        time: formatMinutes(shift.breakMinutes),
+      }),
+      translate("shift.preset.wageSummary", {
+        amount: formatYen(shift.hourlyWage),
+      }),
+    ];
+    if (includeJobName) details.unshift(getShiftDisplayName(shift));
+    return details.join(translate("common.listSeparator"));
+  }
+
+  function applyPresetToForm(shift) {
+    if (
+      !isShiftFormEmpty() &&
+      !window.confirm(translate("shift.preset.overwriteConfirm"))
+    ) {
+      return false;
+    }
+
+    jobNameInput.value = shift.jobName;
+    setBaseTimeInputValue("startTime", shift.startTime);
+    setBaseTimeInputValue("endTime", shift.endTime);
+    renderBreakFields(
+      breakTime.sortBreaksByShiftStart(shift.breaks, shift.startTime),
+    );
+    hourlyWageInput.value =
+      shift.hourlyWage === 0 ? "" : String(shift.hourlyWage);
+    clearShiftFieldValidityMessages();
+    setFormMessage("");
+    closeShiftPresetPanel();
+    jobNameInput.focus();
+    return true;
+  }
+
+  function createPresetItem(item, type) {
+    const container = document.createElement("article");
+    const selectButton = document.createElement("button");
+    const name = document.createElement("strong");
+    const summary = document.createElement("span");
+    const actions = document.createElement("div");
+    const displayName =
+      type === "template" ? item.name : getShiftDisplayName(item);
+
+    container.className = "shift-preset-item";
+    selectButton.className = "shift-preset-select";
+    selectButton.type = "button";
+    selectButton.setAttribute(
+      "aria-label",
+      translate("shift.preset.applyAria", { name: displayName }),
+    );
+    name.className = "shift-preset-name";
+    name.textContent = displayName;
+    summary.className = "shift-preset-summary";
+    summary.textContent = getPresetSummary(item, type === "template");
+    selectButton.append(name, summary);
+    selectButton.addEventListener("click", () => {
+      if (applyPresetToForm(item)) {
+        clearTemplateEditMode();
+        renderShiftPresetPanel();
+      }
+    });
+
+    actions.className = "shift-preset-actions";
+    if (type === "template") {
+      const editButton = document.createElement("button");
+      editButton.className = "shift-preset-action";
+      editButton.type = "button";
+      editButton.textContent = translate("common.edit");
+      editButton.setAttribute(
+        "aria-label",
+        translate("shift.preset.editAria", { name: displayName }),
+      );
+      editButton.addEventListener("click", () => {
+        if (!applyPresetToForm(item)) return;
+        editingTemplateId = item.id;
+        updateTemplateControls();
+        setFormMessage(translate("shift.preset.editInstructions"));
+      });
+
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "shift-preset-action delete";
+      deleteButton.type = "button";
+      deleteButton.textContent = translate("common.delete");
+      deleteButton.setAttribute(
+        "aria-label",
+        translate("shift.preset.deleteTemplateAria", { name: displayName }),
+      );
+      deleteButton.addEventListener("click", () => deleteShiftTemplate(item));
+      actions.append(editButton, deleteButton);
+    } else {
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "shift-preset-action delete";
+      deleteButton.type = "button";
+      deleteButton.textContent = translate("common.delete");
+      deleteButton.setAttribute(
+        "aria-label",
+        translate("shift.preset.deleteHistoryAria", { name: displayName }),
+      );
+      deleteButton.addEventListener("click", () => deleteShiftHistory(item));
+      actions.appendChild(deleteButton);
+    }
+
+    container.append(selectButton, actions);
+    return container;
+  }
+
+  function renderPresetList(container, items, type, emptyKey) {
+    const fragment = document.createDocumentFragment();
+
+    if (items.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "shift-preset-empty";
+      empty.textContent = translate(emptyKey);
+      fragment.appendChild(empty);
+    } else {
+      items.forEach((item) =>
+        fragment.appendChild(createPresetItem(item, type)),
+      );
+    }
+
+    container.replaceChildren(fragment);
+  }
+
+  function renderShiftPresetPanel() {
+    updateTemplateControls();
+    renderPresetList(
+      shiftTemplateList,
+      shiftTemplates,
+      "template",
+      "shift.preset.noTemplates",
+    );
+    renderPresetList(
+      shiftHistoryList,
+      shiftHistory,
+      "history",
+      "shift.preset.noHistory",
+    );
+  }
+
+  function openTemplateNameModal(content) {
+    const template = shiftTemplates.find(
+      (item) => item.id === editingTemplateId,
+    );
+    pendingTemplateContent = content;
+    templateNameInput.value = template?.name ?? "";
+    templateNameInput.setCustomValidity("");
+    templateNameHeading.textContent = translate(
+      template === undefined
+        ? "shift.preset.nameCreateTitle"
+        : "shift.preset.nameEditTitle",
+    );
+    saveShiftTemplateButton.textContent = translate(
+      template === undefined
+        ? "shift.preset.saveTemplate"
+        : "shift.preset.saveTemplateChanges",
+    );
+    templateNameModal.hidden = false;
+    templateNameHeading.focus({ preventScroll: true });
+    templateNameInput.focus();
+  }
+
+  function closeTemplateNameModal() {
+    pendingTemplateContent = null;
+    templateNameForm.reset();
+    templateNameInput.setCustomValidity("");
+    templateNameModal.hidden = true;
+    createShiftTemplateButton.focus();
+  }
+
+  async function deleteShiftTemplate(item) {
+    if (
+      !window.confirm(
+        translate("shift.preset.deleteTemplateConfirm", { name: item.name }),
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await storage.deleteShiftTemplate(item.id);
+    } catch (error) {
+      setFormMessage(translate("storage.deleteFailed"), "error");
+      return;
+    }
+
+    const index = shiftTemplates.findIndex((template) => template.id === item.id);
+    if (index !== -1) shiftTemplates.splice(index, 1);
+    if (editingTemplateId === item.id) clearTemplateEditMode();
+    renderShiftPresetPanel();
+  }
+
+  async function deleteShiftHistory(item) {
+    if (
+      !window.confirm(
+        translate("shift.preset.deleteHistoryConfirm", {
+          name: getShiftDisplayName(item),
+        }),
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await storage.deleteShiftHistory(item.id);
+    } catch (error) {
+      setFormMessage(translate("storage.deleteFailed"), "error");
+      return;
+    }
+
+    const index = shiftHistory.findIndex((history) => history.id === item.id);
+    if (index !== -1) shiftHistory.splice(index, 1);
+    renderShiftPresetPanel();
+  }
+
   function updateWorkLimitWarning(
     container,
     heading,
@@ -1413,6 +1812,9 @@
 
   function resetFormMode() {
     editingShiftId = null;
+    clearTemplateEditMode();
+    closeShiftPresetPanel();
+    shiftPresetButton.hidden = false;
     shiftForm.reset();
     renderBreakFields();
     clearShiftFieldValidityMessages();
@@ -1430,6 +1832,9 @@
     if (!shift) return;
 
     editingShiftId = shiftId;
+    clearTemplateEditMode();
+    closeShiftPresetPanel();
+    shiftPresetButton.hidden = true;
     shiftFormHeading.textContent = translate("shift.form.editTitle");
     shiftSubmitButton.textContent = translate("shift.form.saveChanges");
     cancelEditButton.hidden = false;
@@ -1840,9 +2245,8 @@
 
   shiftForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    applyShiftFieldValidityMessages();
 
-    if (selectedDate === null || !shiftForm.reportValidity()) return;
+    if (selectedDate === null) return;
 
     const dateKey = toDateKey(selectedDate);
     const shifts = getShifts(dateKey);
@@ -1856,47 +2260,9 @@
       return;
     }
 
-    const formData = new FormData(shiftForm);
-    const jobName = String(formData.get("jobName")).trim();
-
-    const startTime = getBaseTimeInputValue("startTime");
-    const endTime = getBaseTimeInputValue("endTime");
-    const breakValues = getBreakTimeValues();
-    const hourlyWageText = String(formData.get("hourlyWage")).trim();
-    const calculatedTime = breakTime.calculateShiftTime(
-      startTime,
-      endTime,
-      breakValues,
-    );
-
-    if (calculatedTime.error) {
-      const errorInput = getBreakErrorInput(calculatedTime.error);
-      const errorMessage = translate(
-        getBreakErrorTranslationKey(calculatedTime.error.code),
-        { limit: breakTime.MAX_BREAKS },
-      );
-
-      if (errorInput === null) {
-        setFormMessage(errorMessage, "error");
-      } else {
-        errorInput.setCustomValidity(errorMessage);
-        errorInput.reportValidity();
-      }
-      return;
-    }
-
+    const shiftValues = readShiftFormValues();
+    if (shiftValues === null) return;
     const wasEditing = editingShiftId !== null;
-    const shiftValues = {
-      jobName,
-      startTime,
-      endTime,
-      breaks: calculatedTime.breaks,
-      breakMinutes: calculatedTime.breakMinutes,
-      hourlyWage: hourlyWageText === "" ? 0 : Number(hourlyWageText),
-      memo: "",
-      actualMinutes: calculatedTime.actualMinutes,
-      isOvernight: calculatedTime.isOvernight,
-    };
 
     const overlappingEntries = getOverlappingShiftEntries(
       dateKey,
@@ -1927,10 +2293,29 @@
         await storage.updateShift(createStoredShift(dateKey, updatedShift));
         shifts[editedShiftIndex] = updatedShift;
       } else {
-        const id = await storage.addShift(
-          createStoredShift(dateKey, shiftValues),
+        const historyUpdate = presets.prepareHistoryUpdate(
+          shiftHistory,
+          shiftValues,
         );
-        shifts.push({ id, ...shiftValues, createdOrder: id });
+        const savedIds = await storage.addShiftWithHistory(
+          createStoredShift(dateKey, shiftValues),
+          historyUpdate.record,
+          historyUpdate.idsToDelete,
+        );
+        const deletedHistoryIds = new Set(historyUpdate.idsToDelete);
+        const retainedHistory = shiftHistory.filter(
+          (item) => !deletedHistoryIds.has(item.id),
+        );
+        const restoredHistory = restoreStoredShiftPreset(
+          { id: savedIds.historyId, ...historyUpdate.record },
+          "history",
+        );
+        shiftHistory.splice(0, shiftHistory.length, restoredHistory, ...retainedHistory);
+        shifts.push({
+          id: savedIds.shiftId,
+          ...shiftValues,
+          createdOrder: savedIds.shiftId,
+        });
       }
     } catch (error) {
       shiftSubmitButton.disabled = false;
@@ -1963,6 +2348,19 @@
       const restoredLongBreaks = storedData.longBreaks.map(
         restoreStoredLongBreak,
       );
+      const restoredTemplates = storedData.shiftTemplates.map((record) =>
+        restoreStoredShiftPreset(record, "template"),
+      );
+      const restoredHistory = storedData.shiftHistory.map((record) =>
+        restoreStoredShiftPreset(record, "history"),
+      );
+
+      if (
+        restoredTemplates.length > presets.MAX_TEMPLATES ||
+        restoredHistory.length > presets.MAX_HISTORY
+      ) {
+        throw new Error("Stored shift preset count exceeds its limit.");
+      }
 
       storedData.shifts.forEach((record) => {
         const { date, shift } = restoreStoredShift(record);
@@ -1977,8 +2375,19 @@
         shiftsByDate.set(date, shifts);
       });
       longBreaks.splice(0, longBreaks.length, ...restoredLongBreaks);
+      shiftTemplates.splice(
+        0,
+        shiftTemplates.length,
+        ...restoredTemplates.sort((left, right) => right.id - left.id),
+      );
+      shiftHistory.splice(
+        0,
+        shiftHistory.length,
+        ...restoredHistory.sort((left, right) => right.id - left.id),
+      );
       renderCalendar();
       renderLongBreakList();
+      renderShiftPresetPanel();
     } catch (error) {
       showStorageRecovery();
     }
@@ -2036,6 +2445,92 @@
     timeSegmentInputs[currentIndex - 1]?.focus();
   });
 
+  shiftPresetButton.addEventListener("click", () => {
+    if (editingShiftId !== null) return;
+    const willOpen = shiftPresetPanel.hidden;
+    shiftPresetPanel.hidden = !willOpen;
+    shiftPresetButton.setAttribute("aria-expanded", String(willOpen));
+    if (willOpen) renderShiftPresetPanel();
+  });
+
+  createShiftTemplateButton.addEventListener("click", () => {
+    if (
+      editingTemplateId === null &&
+      shiftTemplates.length >= presets.MAX_TEMPLATES
+    ) {
+      return;
+    }
+
+    const content = readShiftFormValues();
+    if (content !== null) openTemplateNameModal(content);
+  });
+
+  cancelTemplateEditButton.addEventListener("click", () => {
+    clearTemplateEditMode();
+    setFormMessage("");
+    renderShiftPresetPanel();
+  });
+
+  templateNameInput.addEventListener("input", () => {
+    templateNameInput.setCustomValidity("");
+  });
+
+  templateNameForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (pendingTemplateContent === null) return;
+
+    const name = templateNameInput.value.trim();
+    templateNameInput.setCustomValidity(
+      name === "" ? translate("validation.required") : "",
+    );
+    if (!templateNameForm.reportValidity()) return;
+
+    const content = pendingTemplateContent;
+    const existingIndex = shiftTemplates.findIndex(
+      (item) => item.id === editingTemplateId,
+    );
+    if (editingTemplateId !== null && existingIndex === -1) {
+      closeTemplateNameModal();
+      clearTemplateEditMode();
+      renderShiftPresetPanel();
+      return;
+    }
+
+    saveShiftTemplateButton.disabled = true;
+    try {
+      if (editingTemplateId === null) {
+        const record = createStoredShiftPreset(content, { name });
+        const id = await storage.addShiftTemplate(record);
+        shiftTemplates.unshift(
+          restoreStoredShiftPreset({ id, ...record }, "template"),
+        );
+      } else {
+        const record = createStoredShiftPreset(
+          { id: editingTemplateId, ...content },
+          { name },
+        );
+        await storage.updateShiftTemplate(record);
+        shiftTemplates[existingIndex] = restoreStoredShiftPreset(
+          record,
+          "template",
+        );
+      }
+    } catch (error) {
+      saveShiftTemplateButton.disabled = false;
+      window.alert(translate("storage.saveFailed"));
+      return;
+    }
+
+    saveShiftTemplateButton.disabled = false;
+    closeTemplateNameModal();
+    clearTemplateEditMode();
+    setFormMessage("");
+    renderShiftPresetPanel();
+  });
+
+  templateNameBackdrop.addEventListener("click", closeTemplateNameModal);
+  cancelTemplateNameButton.addEventListener("click", closeTemplateNameModal);
+
   addBreakButton.addEventListener("click", addBreakField);
   breakListFields.addEventListener("click", (event) => {
     if (!(event.target instanceof Element)) return;
@@ -2086,6 +2581,11 @@
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !templateNameModal.hidden) {
+      closeTemplateNameModal();
+      return;
+    }
+
     if (event.key === "Escape" && !longBreakModal.hidden) {
       closeLongBreakModal();
     }
@@ -2115,6 +2615,7 @@
     clearLongBreakFieldValidityMessages();
     renderCalendar();
     renderLongBreakList();
+    renderShiftPresetPanel();
 
     if (selectedDate !== null) updateDayPanel();
 
@@ -2134,6 +2635,18 @@
       editingLongBreakId === null
         ? translate("longBreak.register")
         : translate("longBreak.saveChanges");
+    if (!templateNameModal.hidden) {
+      templateNameHeading.textContent = translate(
+        editingTemplateId === null
+          ? "shift.preset.nameCreateTitle"
+          : "shift.preset.nameEditTitle",
+      );
+      saveShiftTemplateButton.textContent = translate(
+        editingTemplateId === null
+          ? "shift.preset.saveTemplate"
+          : "shift.preset.saveTemplateChanges",
+      );
+    }
     setFormMessage("");
     setLongBreakFormMessage("");
   });
