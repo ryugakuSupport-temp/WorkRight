@@ -63,17 +63,106 @@
   box-shadow: 0 6px 0 currentColor;
 }
 
-.shift-preset-panel {
+.shift-preset-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
   display: grid;
-  gap: 18px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #f8fbfa;
+  place-items: center;
+  padding: 20px;
 }
 
-.shift-preset-panel[hidden] {
+.shift-preset-modal[hidden] {
   display: none;
+}
+
+.shift-preset-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 40, 49, 0.54);
+  cursor: pointer;
+}
+
+.shift-preset-dialog {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(100%, 430px);
+  height: calc(100vh - 40px);
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  border: 1px solid rgba(23, 75, 99, 0.1);
+  border-radius: 26px;
+  background: #f8fbfa;
+  box-shadow: 0 14px 40px rgba(23, 75, 99, 0.1);
+  flex-direction: column;
+}
+
+.shift-preset-dialog-header {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 24px 70px 24px 30px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.shift-preset-dialog-header h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+}
+
+.shift-preset-close-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink);
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.shift-preset-close-button::before,
+.shift-preset-close-button::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.shift-preset-close-button::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.shift-preset-close-button::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.shift-preset-close-button:hover,
+.shift-preset-close-button:focus-visible {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.shift-preset-close-button:focus-visible {
+  outline: 3px solid rgba(23, 75, 99, 0.24);
+  outline-offset: 2px;
+}
+
+.shift-preset-dialog-content {
+  display: grid;
+  gap: 18px;
+  min-height: 0;
+  padding: 14px;
+  overflow-y: auto;
+  background: #f8fbfa;
 }
 
 .shift-preset-section {
@@ -93,7 +182,7 @@
   gap: 10px;
 }
 
-.shift-preset-section-header h4 {
+.shift-preset-section-header h3 {
   margin: 0;
   font-size: 0.88rem;
 }
@@ -208,48 +297,128 @@
   outline-offset: 2px;
 }
 
-.template-name-modal {
+.template-editor-modal {
   position: fixed;
   z-index: 120;
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: 20px;
 }
 
-.template-name-modal[hidden] {
+.template-editor-modal[hidden] {
   display: none;
 }
 
-.template-name-backdrop {
+.template-editor-backdrop {
   position: absolute;
   inset: 0;
   background: rgba(16, 40, 49, 0.54);
+  cursor: pointer;
 }
 
-.template-name-dialog {
+.template-editor-dialog {
   position: relative;
   z-index: 1;
-  width: min(100%, 360px);
-  padding: 22px;
-  border-radius: 18px;
-  background: #fff;
+  display: flex;
+  width: min(100%, 430px);
+  height: calc(100vh - 40px);
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  border: 1px solid #d9c8f5;
+  border-radius: 26px;
+  background: #f2ecff;
   box-shadow: 0 20px 55px rgba(12, 45, 56, 0.24);
+  flex-direction: column;
 }
 
-.template-name-dialog h3 {
-  margin: 0 0 16px;
-  font-size: 1.05rem;
+.template-editor-dialog-header {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 24px 70px 24px 30px;
+  border-bottom: 1px solid #d9c8f5;
+  background: #e9ddff;
 }
 
-.template-name-actions {
+.template-editor-dialog-header h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+}
+
+.template-editor-close-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid #c8b3ed;
+  border-radius: 50%;
+  color: var(--ink);
+  background: #fff;
+  cursor: pointer;
+}
+
+.template-editor-close-button::before,
+.template-editor-close-button::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  content: "";
+}
+
+.template-editor-close-button::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.template-editor-close-button::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.template-editor-close-button:hover,
+.template-editor-close-button:focus-visible {
+  border-color: #a282db;
+  background: #f8f4ff;
+}
+
+.template-editor-close-button:focus-visible {
+  outline: 3px solid rgba(115, 78, 177, 0.24);
+  outline-offset: 2px;
+}
+
+.template-editor-form {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.template-editor-dialog-content {
+  min-height: 0;
+  padding: 20px;
+  overflow-y: auto;
+  background: #f2ecff;
+}
+
+.template-editor-dialog-content .break-time-row,
+.template-editor-dialog-content input {
+  background: #fff;
+}
+
+.template-editor-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
-  margin-top: 16px;
+  padding: 14px 20px;
+  border-top: 1px solid #d9c8f5;
+  background: #e9ddff;
 }
 
-.template-name-actions button {
+.template-editor-actions button {
   min-height: 44px;
   border: 1px solid #b9c8c1;
   border-radius: 10px;
@@ -258,13 +427,49 @@
   cursor: pointer;
 }
 
-.template-name-actions .save-template-button {
+.template-editor-actions .save-template-button {
   border-color: var(--green);
   color: var(--green-deep);
   background: var(--green);
 }
 
+.template-editor-form > .form-message {
+  margin: 0;
+  padding: 0 20px 14px;
+  background: #e9ddff;
+}
+
 @media (max-width: 390px) {
+  .shift-preset-modal {
+    padding: 10px;
+  }
+
+  .shift-preset-dialog,
+  .template-editor-dialog {
+    height: calc(100vh - 20px);
+    max-height: calc(100vh - 20px);
+    border-radius: 20px;
+  }
+
+  .shift-preset-dialog-header,
+  .template-editor-dialog-header {
+    padding-right: 70px;
+    padding-left: 18px;
+  }
+
+  .template-editor-modal {
+    padding: 10px;
+  }
+
+  .template-editor-dialog-content {
+    padding: 14px;
+  }
+
+  .template-editor-actions {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
   .shift-preset-section-header {
     align-items: stretch;
     flex-direction: column;

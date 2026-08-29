@@ -62,12 +62,19 @@
         data-i18n-aria-label="app.ariaLabel"
       >
         <header class="app-header">
-          <img
-            class="brand-mark"
-            src="./assets/workright-mark.svg"
-            alt=""
-            aria-hidden="true"
+          <a
+            class="brand-mark-link"
+            href="./index.html"
+            aria-label="シフト管理"
+            data-i18n-aria-label="nav.shift"
           >
+            <img
+              class="brand-mark"
+              src="./assets/workright-mark.svg"
+              alt=""
+              aria-hidden="true"
+            >
+          </a>
           <div class="app-title">
             <p class="eyebrow">SHIFT MANAGEMENT</p>
             <p class="app-name" data-i18n="app.name">WorkRight（ワークライト）</p>
@@ -442,6 +449,7 @@
                         id="shift-preset-button"
                         class="shift-preset-button"
                         type="button"
+                        aria-haspopup="dialog"
                         aria-expanded="false"
                         aria-controls="shift-preset-panel"
                         aria-label="テンプレートと履歴を開く"
@@ -451,49 +459,6 @@
                       </button>
                     </div>
                   </div>
-
-                  <section
-                    id="shift-preset-panel"
-                    class="shift-preset-panel form-field-wide"
-                    aria-label="シフトテンプレートと履歴"
-                    data-i18n-aria-label="shift.preset.panelAria"
-                    hidden
-                  >
-                    <section class="shift-preset-section" aria-labelledby="shift-template-heading">
-                      <header class="shift-preset-section-header">
-                        <h4 id="shift-template-heading" data-i18n="shift.preset.templates">
-                          登録済みテンプレート
-                        </h4>
-                        <button
-                          id="create-shift-template"
-                          class="create-template-button"
-                          type="button"
-                          data-i18n="shift.preset.createFromCurrent"
-                        >
-                          現在の入力内容から作成
-                        </button>
-                      </header>
-                      <button
-                        id="cancel-template-edit"
-                        class="create-template-button"
-                        type="button"
-                        hidden
-                        data-i18n="shift.preset.cancelTemplateEdit"
-                      >
-                        テンプレート編集をキャンセル
-                      </button>
-                      <p id="shift-template-limit" class="shift-preset-limit"></p>
-                      <div id="shift-template-list" class="shift-preset-list"></div>
-                    </section>
-                    <section class="shift-preset-section" aria-labelledby="shift-history-heading">
-                      <header class="shift-preset-section-header">
-                        <h4 id="shift-history-heading" data-i18n="shift.preset.history">
-                          登録履歴
-                        </h4>
-                      </header>
-                      <div id="shift-history-list" class="shift-preset-list"></div>
-                    </section>
-                  </section>
 
                   <div class="form-field">
                     <span id="start-time-label"><span data-i18n="shift.form.start">開始時刻</span> <span class="required-marker" data-i18n="common.required">必須</span></span>
@@ -579,48 +544,186 @@
           </section>
         </div>
 
-        <div id="template-name-modal" class="template-name-modal" hidden>
+        <div id="shift-preset-panel" class="shift-preset-modal" hidden>
           <div
-            id="template-name-backdrop"
-            class="template-name-backdrop"
+            id="shift-preset-backdrop"
+            class="shift-preset-backdrop"
             aria-hidden="true"
           ></div>
-          <form
-            id="template-name-form"
-            class="template-name-dialog"
+          <section
+            class="shift-preset-dialog"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="template-name-heading"
+            aria-labelledby="shift-preset-heading"
           >
-            <h3 id="template-name-heading" tabindex="-1">テンプレートを作成</h3>
-            <label class="form-field">
-              <span data-i18n="shift.preset.nameLabel">テンプレート名</span>
-              <input
-                id="template-name"
-                name="templateName"
-                type="text"
-                maxlength="50"
-                autocomplete="off"
-                required
+            <header class="shift-preset-dialog-header">
+              <h2
+                id="shift-preset-heading"
+                data-i18n="shift.preset.panelAria"
+                tabindex="-1"
               >
-            </label>
-            <div class="template-name-actions">
+                テンプレートと履歴
+              </h2>
               <button
-                id="save-shift-template"
-                class="save-template-button"
-                type="submit"
-              >
-                テンプレートを保存
-              </button>
-              <button
-                id="cancel-template-name"
+                id="close-shift-preset"
+                class="shift-preset-close-button"
                 type="button"
-                data-i18n="common.cancel"
-              >
-                キャンセル
-              </button>
+                aria-label="テンプレートと履歴を閉じる"
+                data-i18n-aria-label="shift.preset.closeAria"
+              ></button>
+            </header>
+            <div class="shift-preset-dialog-content">
+              <section class="shift-preset-section" aria-labelledby="shift-template-heading">
+                <header class="shift-preset-section-header">
+                  <h3 id="shift-template-heading" data-i18n="shift.preset.templates">
+                    登録済みテンプレート
+                  </h3>
+                  <button
+                    id="create-shift-template"
+                    class="create-template-button"
+                    type="button"
+                    data-i18n="shift.preset.createFromCurrent"
+                  >
+                    新規テンプレート作成
+                  </button>
+                </header>
+                <p id="shift-template-limit" class="shift-preset-limit"></p>
+                <div id="shift-template-list" class="shift-preset-list"></div>
+              </section>
+              <section class="shift-preset-section" aria-labelledby="shift-history-heading">
+                <header class="shift-preset-section-header">
+                  <h3 id="shift-history-heading" data-i18n="shift.preset.history">
+                    登録履歴
+                  </h3>
+                </header>
+                <div id="shift-history-list" class="shift-preset-list"></div>
+              </section>
             </div>
-          </form>
+          </section>
+        </div>
+
+        <div id="template-editor-modal" class="template-editor-modal" hidden>
+          <div
+            id="template-editor-backdrop"
+            class="template-editor-backdrop"
+            aria-hidden="true"
+          ></div>
+          <section
+            class="template-editor-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="template-editor-heading"
+          >
+            <header class="template-editor-dialog-header">
+              <h2
+                id="template-editor-heading"
+                data-i18n="shift.preset.nameCreateTitle"
+                tabindex="-1"
+              >
+                新規テンプレート作成
+              </h2>
+              <button
+                id="close-template-editor"
+                class="template-editor-close-button"
+                type="button"
+                aria-label="テンプレート入力画面を閉じる"
+                data-i18n-aria-label="shift.preset.editorCloseAria"
+              ></button>
+            </header>
+            <form id="template-editor-form" class="template-editor-form">
+              <div class="template-editor-dialog-content">
+                <div class="form-grid">
+                  <label class="form-field form-field-wide">
+                    <span>
+                      <span data-i18n="shift.form.jobName">バイト名</span>
+                      <span class="required-marker" data-i18n="common.required">必須</span>
+                    </span>
+                    <input
+                      id="template-job-name"
+                      name="jobName"
+                      type="text"
+                      maxlength="50"
+                      autocomplete="off"
+                      required
+                    >
+                  </label>
+
+                  <div class="form-field">
+                    <span id="template-start-time-label">
+                      <span data-i18n="shift.form.start">開始時刻</span>
+                      <span class="required-marker" data-i18n="common.required">必須</span>
+                    </span>
+                    <div class="segmented-time-input" role="group" aria-labelledby="template-start-time-label">
+                      <input id="template-start-time-hour" class="time-segment-input" data-time-segment="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" required aria-label="時" data-i18n-aria-label="time.hour">
+                      <span class="time-separator" aria-hidden="true">:</span>
+                      <input id="template-start-time-minute" class="time-segment-input" data-time-segment="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" required aria-label="分" data-i18n-aria-label="time.minute">
+                    </div>
+                  </div>
+
+                  <div class="form-field">
+                    <span id="template-end-time-label">
+                      <span data-i18n="shift.form.end">終了時刻</span>
+                      <span class="required-marker" data-i18n="common.required">必須</span>
+                    </span>
+                    <div class="segmented-time-input" role="group" aria-labelledby="template-end-time-label">
+                      <input id="template-end-time-hour" class="time-segment-input" data-time-segment="hour" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" required aria-label="時" data-i18n-aria-label="time.hour">
+                      <span class="time-separator" aria-hidden="true">:</span>
+                      <input id="template-end-time-minute" class="time-segment-input" data-time-segment="minute" type="text" inputmode="numeric" maxlength="2" pattern="[0-9]{2}" placeholder="00" autocomplete="off" required aria-label="分" data-i18n-aria-label="time.minute">
+                    </div>
+                  </div>
+
+                  <div class="break-fields form-field-wide">
+                    <div id="template-break-list-fields" class="break-list-fields"></div>
+                    <button id="template-add-break" class="add-break-button" type="button">
+                      <span aria-hidden="true">＋</span>
+                      <span data-i18n="shift.form.addBreak">休憩を追加</span>
+                    </button>
+                  </div>
+
+                  <p class="form-hint form-field-wide" data-i18n="shift.form.breakHint">
+                    使用しない休憩は、開始時刻と終了時刻を両方空欄にしてください。
+                  </p>
+
+                  <label class="form-field">
+                    <span data-i18n="shift.form.hourlyWage">時給（円）</span>
+                    <input
+                      id="template-hourly-wage"
+                      name="hourlyWage"
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputmode="numeric"
+                    >
+                    <small class="wage-note" data-i18n="shift.form.wageHint">未入力の場合は0円として計算します</small>
+                  </label>
+                </div>
+              </div>
+              <div class="template-editor-actions">
+                <button
+                  id="save-shift-template"
+                  class="save-template-button"
+                  type="submit"
+                  data-i18n="shift.preset.saveTemplate"
+                >
+                  テンプレートを登録
+                </button>
+                <button
+                  id="cancel-template-editor"
+                  type="button"
+                  data-i18n="common.cancel"
+                >
+                  キャンセル
+                </button>
+              </div>
+              <p
+                id="template-editor-message"
+                class="form-message"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></p>
+            </form>
+          </section>
         </div>
 
         <footer class="app-footer">

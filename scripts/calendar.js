@@ -42,29 +42,62 @@
   const jobNameInput = document.getElementById("job-name");
   const shiftPresetButton = document.getElementById("shift-preset-button");
   const shiftPresetPanel = document.getElementById("shift-preset-panel");
+  const shiftPresetBackdrop = document.getElementById(
+    "shift-preset-backdrop",
+  );
+  const shiftPresetHeading = document.getElementById("shift-preset-heading");
+  const closeShiftPresetButton = document.getElementById(
+    "close-shift-preset",
+  );
   const createShiftTemplateButton = document.getElementById(
     "create-shift-template",
-  );
-  const cancelTemplateEditButton = document.getElementById(
-    "cancel-template-edit",
   );
   const shiftTemplateLimit = document.getElementById("shift-template-limit");
   const shiftTemplateList = document.getElementById("shift-template-list");
   const shiftHistoryList = document.getElementById("shift-history-list");
-  const templateNameModal = document.getElementById("template-name-modal");
-  const templateNameBackdrop = document.getElementById(
-    "template-name-backdrop",
+  const templateEditorModal = document.getElementById(
+    "template-editor-modal",
   );
-  const templateNameForm = document.getElementById("template-name-form");
-  const templateNameHeading = document.getElementById(
-    "template-name-heading",
+  const templateEditorBackdrop = document.getElementById(
+    "template-editor-backdrop",
   );
-  const templateNameInput = document.getElementById("template-name");
+  const templateEditorForm = document.getElementById("template-editor-form");
+  const templateEditorHeading = document.getElementById(
+    "template-editor-heading",
+  );
+  const closeTemplateEditorButton = document.getElementById(
+    "close-template-editor",
+  );
+  const cancelTemplateEditorButton = document.getElementById(
+    "cancel-template-editor",
+  );
+  const templateJobNameInput = document.getElementById("template-job-name");
+  const templateBaseTimeInputGroups = Object.freeze({
+    startTime: Object.freeze({
+      hour: document.getElementById("template-start-time-hour"),
+      minute: document.getElementById("template-start-time-minute"),
+      required: true,
+    }),
+    endTime: Object.freeze({
+      hour: document.getElementById("template-end-time-hour"),
+      minute: document.getElementById("template-end-time-minute"),
+      required: true,
+    }),
+  });
+  const templateBreakListFields = document.getElementById(
+    "template-break-list-fields",
+  );
+  const templateAddBreakButton = document.getElementById(
+    "template-add-break",
+  );
+  const templateHourlyWageInput = document.getElementById(
+    "template-hourly-wage",
+  );
+  const templateEditorMessage = document.getElementById(
+    "template-editor-message",
+  );
   const saveShiftTemplateButton = document.getElementById(
     "save-shift-template",
-  );
-  const cancelTemplateNameButton = document.getElementById(
-    "cancel-template-name",
   );
   const baseTimeInputGroups = Object.freeze({
     startTime: Object.freeze({
@@ -161,7 +194,6 @@
   let editingShiftId = null;
   let editingLongBreakId = null;
   let editingTemplateId = null;
-  let pendingTemplateContent = null;
 
   function translate(key, values = {}) {
     return language.translate(key, values);
@@ -474,7 +506,188 @@
     return keys[errorCode];
   }
 
-  function normalizeTimeSegmentInput(input) {
+  function getTemplateBreakRows() {
+    return Array.from(
+      templateBreakListFields.querySelectorAll(".break-time-row"),
+    );
+  }
+
+  function getTemplateBreakTimeValues() {
+    return getTemplateBreakRows().map((row) => {
+      const groups = getBreakTimeGroups(row);
+      return {
+        startTime: getTimeGroupValue(groups.start),
+        endTime: getTimeGroupValue(groups.end),
+      };
+    });
+  }
+
+  function getTemplateTimeInputGroups() {
+    return [
+      ...Object.values(templateBaseTimeInputGroups),
+      ...getTemplateBreakRows().flatMap((row) =>
+        Object.values(getBreakTimeGroups(row)),
+      ),
+    ];
+  }
+
+  function getTemplateTimeSegmentInputs() {
+    return getTemplateTimeInputGroups().flatMap((group) => [
+      group.hour,
+      group.minute,
+    ]);
+  }
+
+  function createTemplateBreakTimeField(fieldName, rowNumber) {
+    const field = document.createElement("div");
+    const label = document.createElement("span");
+    const inputGroup = document.createElement("div");
+    const hourInput = createBreakTimeInput("hour", fieldName);
+    const separator = document.createElement("span");
+    const minuteInput = createBreakTimeInput("minute", fieldName);
+    const labelId =
+      "template-break-" + rowNumber + "-" + fieldName + "-time-label";
+
+    field.className = "form-field";
+    label.id = labelId;
+    label.className = "break-" + fieldName + "-label";
+    inputGroup.className = "segmented-time-input";
+    inputGroup.setAttribute("role", "group");
+    inputGroup.setAttribute("aria-labelledby", labelId);
+    separator.className = "time-separator";
+    separator.setAttribute("aria-hidden", "true");
+    separator.textContent = ":";
+    inputGroup.append(hourInput, separator, minuteInput);
+    field.append(label, inputGroup);
+    return field;
+  }
+
+  function updateTemplateBreakRowLabels(row, index) {
+    const numeral = breakNumerals[index];
+    row.querySelector(".break-time-row-title").textContent = translate(
+      "shift.form.breakNumber",
+      { number: numeral },
+    );
+    row.querySelector(".break-start-label").textContent = translate(
+      "shift.form.breakStartShort",
+    );
+    row.querySelector(".break-end-label").textContent = translate(
+      "shift.form.breakEndShort",
+    );
+    row.querySelectorAll('[data-time-segment="hour"]').forEach((input) => {
+      input.setAttribute("aria-label", translate("time.hour"));
+    });
+    row.querySelectorAll('[data-time-segment="minute"]').forEach((input) => {
+      input.setAttribute("aria-label", translate("time.minute"));
+    });
+
+    const removeButton = row.querySelector(".remove-break-button");
+    if (removeButton !== null) {
+      removeButton.setAttribute(
+        "aria-label",
+        translate("shift.form.removeBreak", { number: numeral }),
+      );
+    }
+  }
+
+  function updateAllTemplateBreakRowLabels() {
+    getTemplateBreakRows().forEach(updateTemplateBreakRowLabels);
+  }
+
+  function createTemplateBreakRow(breakValue, index) {
+    const row = document.createElement("div");
+    const header = document.createElement("header");
+    const title = document.createElement("strong");
+    const timeFields = document.createElement("div");
+    const rowNumber = index + 1;
+
+    row.className = "break-time-row";
+    row.dataset.breakIndex = String(index);
+    header.className = "break-time-row-header";
+    title.className = "break-time-row-title";
+    timeFields.className = "break-time-inputs";
+    timeFields.append(
+      createTemplateBreakTimeField("start", rowNumber),
+      createTemplateBreakTimeField("end", rowNumber),
+    );
+    header.appendChild(title);
+
+    if (index > 0) {
+      const removeButton = document.createElement("button");
+      removeButton.className = "remove-break-button";
+      removeButton.type = "button";
+      removeButton.textContent = "−";
+      header.appendChild(removeButton);
+    }
+
+    row.append(header, timeFields);
+    updateTemplateBreakRowLabels(row, index);
+    const groups = getBreakTimeGroups(row);
+    setTimeGroupValue(groups.start, breakValue.startTime);
+    setTimeGroupValue(groups.end, breakValue.endTime);
+    return row;
+  }
+
+  function updateTemplateBreakControls() {
+    templateAddBreakButton.hidden =
+      getTemplateBreakRows().length >= breakTime.MAX_BREAKS;
+  }
+
+  function renderTemplateBreakFields(breakValues = [], focusLast = false) {
+    const values =
+      breakValues.length === 0
+        ? [{ startTime: "", endTime: "" }]
+        : breakValues.slice(0, breakTime.MAX_BREAKS);
+    const fragment = document.createDocumentFragment();
+
+    values.forEach((breakValue, index) => {
+      fragment.appendChild(createTemplateBreakRow(breakValue, index));
+    });
+
+    templateBreakListFields.replaceChildren(fragment);
+    updateTemplateBreakControls();
+
+    if (focusLast) {
+      const rows = getTemplateBreakRows();
+      getBreakTimeGroups(rows[rows.length - 1]).start.hour.focus();
+    }
+  }
+
+  function addTemplateBreakField() {
+    const values = getTemplateBreakTimeValues();
+    if (values.length >= breakTime.MAX_BREAKS) return;
+
+    values.push({ startTime: "", endTime: "" });
+    renderTemplateBreakFields(values, true);
+  }
+
+  function removeTemplateBreakField(index) {
+    const values = getTemplateBreakTimeValues();
+    if (index <= 0 || index >= values.length) return;
+
+    values.splice(index, 1);
+    renderTemplateBreakFields(values);
+    const nextRow =
+      getTemplateBreakRows()[Math.min(index, values.length - 1)];
+    nextRow?.querySelector(".remove-break-button")?.focus();
+    if (nextRow === undefined || index >= values.length) {
+      templateAddBreakButton.focus();
+    }
+  }
+
+  function getTemplateBreakErrorInput(error) {
+    const row =
+      getTemplateBreakRows()[error.breakIndex] ??
+      getTemplateBreakRows()[0];
+    if (!row) return null;
+    return getBreakTimeGroups(row)[error.field].hour;
+  }
+
+  function normalizeTimeSegmentInput(
+    input,
+    timeSegmentInputs = getAllTimeSegmentInputs(),
+    fallbackInput = hourlyWageInput,
+  ) {
     input.value = input.value.replace(/\D/g, "").slice(0, 2);
     const maxFirstDigit =
       input.dataset.timeSegment === "hour" ? 2 : 5;
@@ -487,10 +700,8 @@
 
     if (input.value.length !== 2) return;
 
-    const timeSegmentInputs = getAllTimeSegmentInputs();
     const currentIndex = timeSegmentInputs.indexOf(input);
-    const nextInput =
-      timeSegmentInputs[currentIndex + 1] ?? hourlyWageInput;
+    const nextInput = timeSegmentInputs[currentIndex + 1] ?? fallbackInput;
     nextInput.focus();
   }
 
@@ -1265,13 +1476,6 @@
       button.appendChild(longBreakBand);
     }
 
-    if (isToday) {
-      const todayLabel = document.createElement("span");
-      todayLabel.className = "today-label";
-      todayLabel.textContent = translate("calendar.today");
-      button.appendChild(todayLabel);
-    }
-
     cell.appendChild(button);
     return cell;
   }
@@ -1473,9 +1677,19 @@
     formMessage.hidden = message === "";
   }
 
-  function closeShiftPresetPanel() {
+  function openShiftPresetPanel() {
+    renderShiftPresetPanel();
+    shiftPresetPanel.hidden = false;
+    shiftPresetButton.setAttribute("aria-expanded", "true");
+    shiftPresetHeading.focus({ preventScroll: true });
+  }
+
+  function closeShiftPresetPanel(restoreFocus = false) {
     shiftPresetPanel.hidden = true;
     shiftPresetButton.setAttribute("aria-expanded", "false");
+    if (restoreFocus && !shiftPresetButton.hidden) {
+      shiftPresetButton.focus({ preventScroll: true });
+    }
   }
 
   function isShiftFormEmpty() {
@@ -1534,24 +1748,117 @@
     };
   }
 
-  function clearTemplateEditMode() {
-    editingTemplateId = null;
-    createShiftTemplateButton.textContent = translate(
-      "shift.preset.createFromCurrent",
+  function setTemplateEditorMessage(message, type = "") {
+    templateEditorMessage.textContent = message;
+    templateEditorMessage.className =
+      "form-message" + (type ? " " + type : "");
+    templateEditorMessage.hidden = message === "";
+  }
+
+  function clearTemplateEditorValidityMessages() {
+    [
+      templateJobNameInput,
+      ...getTemplateTimeSegmentInputs(),
+      templateHourlyWageInput,
+    ].forEach((input) => input.setCustomValidity(""));
+  }
+
+  function getTemplateTimeInputGroupForSegment(input) {
+    return (
+      getTemplateTimeInputGroups().find(
+        (group) => group.hour === input || group.minute === input,
+      ) ?? null
     );
-    cancelTemplateEditButton.hidden = true;
+  }
+
+  function updateTemplateEditorFieldValidity(input) {
+    const timeGroup = getTemplateTimeInputGroupForSegment(input);
+    if (timeGroup !== null) {
+      updateTimeGroupValidity(timeGroup);
+      return;
+    }
+
+    if (
+      input === templateHourlyWageInput &&
+      input.validity.badInput
+    ) {
+      input.setCustomValidity(translate("validation.numberInvalid"));
+      return;
+    }
+
+    if (
+      input === templateHourlyWageInput &&
+      input.validity.rangeUnderflow
+    ) {
+      input.setCustomValidity(translate("validation.wageMinimum"));
+      return;
+    }
+
+    if (input.validity.valueMissing) {
+      input.setCustomValidity(translate("validation.required"));
+    }
+  }
+
+  function applyTemplateEditorValidityMessages() {
+    clearTemplateEditorValidityMessages();
+    getTemplateTimeInputGroups().forEach(updateTimeGroupValidity);
+    updateTemplateEditorFieldValidity(templateJobNameInput);
+    updateTemplateEditorFieldValidity(templateHourlyWageInput);
+  }
+
+  function readTemplateEditorValues() {
+    applyTemplateEditorValidityMessages();
+    if (!templateEditorForm.reportValidity()) return null;
+
+    const formData = new FormData(templateEditorForm);
+    const startTime = getTimeGroupValue(
+      templateBaseTimeInputGroups.startTime,
+    );
+    const endTime = getTimeGroupValue(
+      templateBaseTimeInputGroups.endTime,
+    );
+    const calculatedTime = breakTime.calculateShiftTime(
+      startTime,
+      endTime,
+      getTemplateBreakTimeValues(),
+    );
+
+    if (calculatedTime.error) {
+      const errorInput = getTemplateBreakErrorInput(calculatedTime.error);
+      const errorMessage = translate(
+        getBreakErrorTranslationKey(calculatedTime.error.code),
+        { limit: breakTime.MAX_BREAKS },
+      );
+
+      if (errorInput === null) {
+        setTemplateEditorMessage(errorMessage, "error");
+      } else {
+        errorInput.setCustomValidity(errorMessage);
+        errorInput.reportValidity();
+      }
+      return null;
+    }
+
+    const hourlyWageText = String(formData.get("hourlyWage")).trim();
+    return {
+      jobName: String(formData.get("jobName")).trim(),
+      startTime,
+      endTime,
+      breaks: calculatedTime.breaks,
+      breakMinutes: calculatedTime.breakMinutes,
+      hourlyWage: hourlyWageText === "" ? 0 : Number(hourlyWageText),
+      memo: "",
+      actualMinutes: calculatedTime.actualMinutes,
+      isOvernight: calculatedTime.isOvernight,
+    };
   }
 
   function updateTemplateControls() {
-    const isEditingTemplate = editingTemplateId !== null;
     createShiftTemplateButton.disabled =
-      !isEditingTemplate && shiftTemplates.length >= presets.MAX_TEMPLATES;
+      shiftTemplates.length >= presets.MAX_TEMPLATES;
     createShiftTemplateButton.textContent = translate(
-      isEditingTemplate
-        ? "shift.preset.updateFromCurrent"
-        : "shift.preset.createFromCurrent",
+      "shift.preset.createFromCurrent",
     );
-    cancelTemplateEditButton.hidden = !isEditingTemplate;
     shiftTemplateLimit.textContent = translate("shift.preset.templateLimit", {
       count: shiftTemplates.length,
       limit: presets.MAX_TEMPLATES,
@@ -1572,14 +1879,7 @@
     return details.join(translate("common.listSeparator"));
   }
 
-  function applyPresetToForm(shift) {
-    if (
-      !isShiftFormEmpty() &&
-      !window.confirm(translate("shift.preset.overwriteConfirm"))
-    ) {
-      return false;
-    }
-
+  function fillShiftForm(shift) {
     jobNameInput.value = shift.jobName;
     setBaseTimeInputValue("startTime", shift.startTime);
     setBaseTimeInputValue("endTime", shift.endTime);
@@ -1590,6 +1890,17 @@
       shift.hourlyWage === 0 ? "" : String(shift.hourlyWage);
     clearShiftFieldValidityMessages();
     setFormMessage("");
+  }
+
+  function applyPresetToForm(shift) {
+    if (
+      !isShiftFormEmpty() &&
+      !window.confirm(translate("shift.preset.overwriteConfirm"))
+    ) {
+      return false;
+    }
+
+    fillShiftForm(shift);
     closeShiftPresetPanel();
     jobNameInput.focus();
     return true;
@@ -1601,8 +1912,7 @@
     const name = document.createElement("strong");
     const summary = document.createElement("span");
     const actions = document.createElement("div");
-    const displayName =
-      type === "template" ? item.name : getShiftDisplayName(item);
+    const displayName = getShiftDisplayName(item);
 
     container.className = "shift-preset-item";
     selectButton.className = "shift-preset-select";
@@ -1614,11 +1924,10 @@
     name.className = "shift-preset-name";
     name.textContent = displayName;
     summary.className = "shift-preset-summary";
-    summary.textContent = getPresetSummary(item, type === "template");
+    summary.textContent = getPresetSummary(item, false);
     selectButton.append(name, summary);
     selectButton.addEventListener("click", () => {
       if (applyPresetToForm(item)) {
-        clearTemplateEditMode();
         renderShiftPresetPanel();
       }
     });
@@ -1634,10 +1943,7 @@
         translate("shift.preset.editAria", { name: displayName }),
       );
       editButton.addEventListener("click", () => {
-        if (!applyPresetToForm(item)) return;
-        editingTemplateId = item.id;
-        updateTemplateControls();
-        setFormMessage(translate("shift.preset.editInstructions"));
+        openTemplateEditor(item);
       });
 
       const deleteButton = document.createElement("button");
@@ -1700,40 +2006,65 @@
     );
   }
 
-  function openTemplateNameModal(content) {
-    const template = shiftTemplates.find(
-      (item) => item.id === editingTemplateId,
+  function openTemplateEditor(template = null) {
+    editingTemplateId = template?.id ?? null;
+    templateEditorForm.reset();
+    clearTemplateEditorValidityMessages();
+    setTemplateEditorMessage("");
+    templateJobNameInput.value = template?.jobName ?? "";
+    setTimeGroupValue(
+      templateBaseTimeInputGroups.startTime,
+      template?.startTime ?? "",
     );
-    pendingTemplateContent = content;
-    templateNameInput.value = template?.name ?? "";
-    templateNameInput.setCustomValidity("");
-    templateNameHeading.textContent = translate(
-      template === undefined
+    setTimeGroupValue(
+      templateBaseTimeInputGroups.endTime,
+      template?.endTime ?? "",
+    );
+    renderTemplateBreakFields(
+      template === null
+        ? []
+        : breakTime.sortBreaksByShiftStart(
+            template.breaks,
+            template.startTime,
+          ),
+    );
+    templateHourlyWageInput.value =
+      template === null || template.hourlyWage === 0
+        ? ""
+        : String(template.hourlyWage);
+    templateEditorHeading.textContent = translate(
+      template === null
         ? "shift.preset.nameCreateTitle"
         : "shift.preset.nameEditTitle",
     );
     saveShiftTemplateButton.textContent = translate(
-      template === undefined
+      template === null
         ? "shift.preset.saveTemplate"
         : "shift.preset.saveTemplateChanges",
     );
-    templateNameModal.hidden = false;
-    templateNameHeading.focus({ preventScroll: true });
-    templateNameInput.focus();
+    templateEditorModal.hidden = false;
+    templateEditorHeading.focus({ preventScroll: true });
+    templateJobNameInput.focus({ preventScroll: true });
   }
 
-  function closeTemplateNameModal() {
-    pendingTemplateContent = null;
-    templateNameForm.reset();
-    templateNameInput.setCustomValidity("");
-    templateNameModal.hidden = true;
-    createShiftTemplateButton.focus();
+  function closeTemplateEditor(restoreFocus = true) {
+    editingTemplateId = null;
+    templateEditorForm.reset();
+    clearTemplateEditorValidityMessages();
+    setTemplateEditorMessage("");
+    renderTemplateBreakFields();
+    templateEditorModal.hidden = true;
+    if (restoreFocus && !shiftPresetPanel.hidden) {
+      createShiftTemplateButton.focus({ preventScroll: true });
+    }
   }
 
   async function deleteShiftTemplate(item) {
     if (
       !window.confirm(
-        translate("shift.preset.deleteTemplateConfirm", { name: item.name }),
+        translate("shift.preset.deleteTemplateConfirm", {
+          name: getShiftDisplayName(item),
+        }),
       )
     ) {
       return;
@@ -1748,7 +2079,7 @@
 
     const index = shiftTemplates.findIndex((template) => template.id === item.id);
     if (index !== -1) shiftTemplates.splice(index, 1);
-    if (editingTemplateId === item.id) clearTemplateEditMode();
+    if (editingTemplateId === item.id) closeTemplateEditor();
     renderShiftPresetPanel();
   }
 
@@ -1812,7 +2143,7 @@
 
   function resetFormMode() {
     editingShiftId = null;
-    clearTemplateEditMode();
+    closeTemplateEditor(false);
     closeShiftPresetPanel();
     shiftPresetButton.hidden = false;
     shiftForm.reset();
@@ -1832,7 +2163,7 @@
     if (!shift) return;
 
     editingShiftId = shiftId;
-    clearTemplateEditMode();
+    closeTemplateEditor(false);
     closeShiftPresetPanel();
     shiftPresetButton.hidden = true;
     shiftFormHeading.textContent = translate("shift.form.editTitle");
@@ -2447,67 +2778,105 @@
 
   shiftPresetButton.addEventListener("click", () => {
     if (editingShiftId !== null) return;
-    const willOpen = shiftPresetPanel.hidden;
-    shiftPresetPanel.hidden = !willOpen;
-    shiftPresetButton.setAttribute("aria-expanded", String(willOpen));
-    if (willOpen) renderShiftPresetPanel();
+    openShiftPresetPanel();
   });
 
+  shiftPresetBackdrop.addEventListener("click", () =>
+    closeShiftPresetPanel(true),
+  );
+  closeShiftPresetButton.addEventListener("click", () =>
+    closeShiftPresetPanel(true),
+  );
+
   createShiftTemplateButton.addEventListener("click", () => {
+    if (shiftTemplates.length >= presets.MAX_TEMPLATES) return;
+    openTemplateEditor();
+  });
+
+  templateEditorForm.addEventListener(
+    "invalid",
+    (event) => {
+      if (event.target instanceof HTMLInputElement) {
+        updateTemplateEditorFieldValidity(event.target);
+      }
+    },
+    true,
+  );
+
+  templateEditorForm.addEventListener("input", (event) => {
+    if (!(event.target instanceof HTMLInputElement)) return;
+
+    const input = event.target;
+    input.setCustomValidity("");
+    setTemplateEditorMessage("");
+
+    if (input.classList.contains("time-segment-input")) {
+      normalizeTimeSegmentInput(
+        input,
+        getTemplateTimeSegmentInputs(),
+        templateHourlyWageInput,
+      );
+
+      if (input.closest(".break-time-row") !== null) {
+        templateBreakListFields
+          .querySelectorAll(".time-segment-input")
+          .forEach((breakInput) => breakInput.setCustomValidity(""));
+      }
+    }
+  });
+
+  templateEditorForm.addEventListener("change", (event) => {
+    if (event.target instanceof HTMLInputElement) {
+      event.target.setCustomValidity("");
+    }
+  });
+
+  templateEditorForm.addEventListener("keydown", (event) => {
+    const input = event.target;
     if (
-      editingTemplateId === null &&
-      shiftTemplates.length >= presets.MAX_TEMPLATES
+      !(input instanceof HTMLInputElement) ||
+      !input.classList.contains("time-segment-input") ||
+      event.key !== "Backspace" ||
+      input.value !== ""
     ) {
       return;
     }
 
-    const content = readShiftFormValues();
-    if (content !== null) openTemplateNameModal(content);
+    const timeSegmentInputs = getTemplateTimeSegmentInputs();
+    const currentIndex = timeSegmentInputs.indexOf(input);
+    timeSegmentInputs[currentIndex - 1]?.focus();
   });
 
-  cancelTemplateEditButton.addEventListener("click", () => {
-    clearTemplateEditMode();
-    setFormMessage("");
-    renderShiftPresetPanel();
-  });
-
-  templateNameInput.addEventListener("input", () => {
-    templateNameInput.setCustomValidity("");
-  });
-
-  templateNameForm.addEventListener("submit", async (event) => {
+  templateEditorForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (pendingTemplateContent === null) return;
 
-    const name = templateNameInput.value.trim();
-    templateNameInput.setCustomValidity(
-      name === "" ? translate("validation.required") : "",
-    );
-    if (!templateNameForm.reportValidity()) return;
+    const content = readTemplateEditorValues();
+    if (content === null) return;
 
-    const content = pendingTemplateContent;
+    const templateId = editingTemplateId;
     const existingIndex = shiftTemplates.findIndex(
-      (item) => item.id === editingTemplateId,
+      (item) => item.id === templateId,
     );
-    if (editingTemplateId !== null && existingIndex === -1) {
-      closeTemplateNameModal();
-      clearTemplateEditMode();
+    if (templateId !== null && existingIndex === -1) {
+      closeTemplateEditor();
       renderShiftPresetPanel();
       return;
     }
 
     saveShiftTemplateButton.disabled = true;
     try {
-      if (editingTemplateId === null) {
-        const record = createStoredShiftPreset(content, { name });
+      if (templateId === null) {
+        const record = createStoredShiftPreset(content, {
+          name: content.jobName,
+        });
         const id = await storage.addShiftTemplate(record);
         shiftTemplates.unshift(
           restoreStoredShiftPreset({ id, ...record }, "template"),
         );
       } else {
         const record = createStoredShiftPreset(
-          { id: editingTemplateId, ...content },
-          { name },
+          { id: templateId, ...content },
+          { name: content.jobName },
         );
         await storage.updateShiftTemplate(record);
         shiftTemplates[existingIndex] = restoreStoredShiftPreset(
@@ -2522,14 +2891,31 @@
     }
 
     saveShiftTemplateButton.disabled = false;
-    closeTemplateNameModal();
-    clearTemplateEditMode();
-    setFormMessage("");
+    fillShiftForm(content);
+    closeTemplateEditor(false);
+    closeShiftPresetPanel();
     renderShiftPresetPanel();
+    jobNameInput.focus({ preventScroll: true });
   });
 
-  templateNameBackdrop.addEventListener("click", closeTemplateNameModal);
-  cancelTemplateNameButton.addEventListener("click", closeTemplateNameModal);
+  templateEditorBackdrop.addEventListener("click", () =>
+    closeTemplateEditor(),
+  );
+  closeTemplateEditorButton.addEventListener("click", () =>
+    closeTemplateEditor(),
+  );
+  cancelTemplateEditorButton.addEventListener("click", () =>
+    closeTemplateEditor(),
+  );
+  templateAddBreakButton.addEventListener("click", addTemplateBreakField);
+  templateBreakListFields.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const removeButton = event.target.closest(".remove-break-button");
+    if (removeButton === null) return;
+
+    const row = removeButton.closest(".break-time-row");
+    removeTemplateBreakField(Number(row.dataset.breakIndex));
+  });
 
   addBreakButton.addEventListener("click", addBreakField);
   breakListFields.addEventListener("click", (event) => {
@@ -2581,8 +2967,13 @@
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !templateNameModal.hidden) {
-      closeTemplateNameModal();
+    if (event.key === "Escape" && !templateEditorModal.hidden) {
+      closeTemplateEditor();
+      return;
+    }
+
+    if (event.key === "Escape" && !shiftPresetPanel.hidden) {
+      closeShiftPresetPanel(true);
       return;
     }
 
@@ -2612,6 +3003,8 @@
   document.addEventListener("shiftlanguagechange", () => {
     clearShiftFieldValidityMessages();
     updateAllBreakRowLabels();
+    clearTemplateEditorValidityMessages();
+    updateAllTemplateBreakRowLabels();
     clearLongBreakFieldValidityMessages();
     renderCalendar();
     renderLongBreakList();
@@ -2635,8 +3028,8 @@
       editingLongBreakId === null
         ? translate("longBreak.register")
         : translate("longBreak.saveChanges");
-    if (!templateNameModal.hidden) {
-      templateNameHeading.textContent = translate(
+    if (!templateEditorModal.hidden) {
+      templateEditorHeading.textContent = translate(
         editingTemplateId === null
           ? "shift.preset.nameCreateTitle"
           : "shift.preset.nameEditTitle",
@@ -2648,8 +3041,10 @@
       );
     }
     setFormMessage("");
+    setTemplateEditorMessage("");
     setLongBreakFormMessage("");
   });
 
+  renderTemplateBreakFields();
   initializeStoredData();
 })();

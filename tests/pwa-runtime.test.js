@@ -51,8 +51,8 @@ async function testServiceWorker() {
     open: async () => cache,
     match: async (request) => cache.match(request),
     keys: async () => [
-      "workright-app-v0",
-      "workright-app-v1",
+      "workright-app-v6",
+      "workright-app-v7",
       "unrelated-cache",
     ],
     delete: async (cacheName) => {
@@ -105,7 +105,7 @@ async function testServiceWorker() {
     },
   });
   await activatePromise;
-  assert.deepEqual(deletedCaches, ["workright-app-v0"]);
+  assert.deepEqual(deletedCaches, ["workright-app-v6"]);
   assert.equal(clientsClaimed, true);
 
   function dispatchFetch(request) {

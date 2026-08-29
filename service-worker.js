@@ -2,7 +2,7 @@
 
 const CACHE_PREFIX = "workright-app-";
 // キャッシュ対象を変更して公開する場合は、この値を更新する。
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v7";
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 const APP_SHELL_URLS = Object.freeze([
   "./",
