@@ -51,8 +51,8 @@ async function testServiceWorker() {
     open: async () => cache,
     match: async (request) => cache.match(request),
     keys: async () => [
-      "workright-app-v6",
-      "workright-app-v7",
+      "workright-app-v8",
+      "workright-app-v9",
       "unrelated-cache",
     ],
     delete: async (cacheName) => {
@@ -93,7 +93,8 @@ async function testServiceWorker() {
     },
   });
   await installPromise;
-  assert.ok(cachedUrls.includes("./index.html"));
+  assert.ok(cachedUrls.includes("./"));
+  assert.ok(!cachedUrls.includes("./index.html"));
   assert.ok(cachedUrls.includes("./pages/online-only.html"));
   assert.ok(!cachedUrls.includes("./pages/school-guide.html"));
   assert.ok(!cachedUrls.includes("./pages/legal-references.html"));
@@ -105,7 +106,7 @@ async function testServiceWorker() {
     },
   });
   await activatePromise;
-  assert.deepEqual(deletedCaches, ["workright-app-v6"]);
+  assert.deepEqual(deletedCaches, ["workright-app-v8"]);
   assert.equal(clientsClaimed, true);
 
   function dispatchFetch(request) {

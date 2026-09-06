@@ -25,6 +25,9 @@ function readFrozenArray(constantName) {
 const appShellUrls = readFrozenArray("APP_SHELL_URLS");
 const onlineOnlyPaths = readFrozenArray("ONLINE_ONLY_PATHS");
 
+assert.ok(appShellUrls.includes("./"));
+assert.ok(!appShellUrls.includes("./index.html"));
+
 for (const relativeUrl of appShellUrls) {
   if (relativeUrl === "./") continue;
   const filePath = path.join(projectRoot, relativeUrl.replace(/^\.\//, ""));
